@@ -180,3 +180,14 @@ print get_RMSE(dat.W, regr63.predict(dat.SO.to_frame()))
 plt.scatter(dat.SO, dat.W)
 plt.plot(dat.SO, dat.SO*regr63.coef_+regr63.intercept_, color = "red")
 plt.show()
+
+## (d)
+## (e)
+subset_dat = goalies2017[goalies2017.GP>=150][["Player", "GAA", "SV_PCT"]]
+subset_GAA = subset_dat.sort_values(by="GAA")[["Player", "GAA"]]
+target_GAA = subset_GAA[subset_GAA.Player=="Jake Allen"].GAA.values[0]
+print min(np.where(subset_GAA.GAA.values == target_GAA)[0])+1
+subset_PCT = subset_dat.sort_values(by="SV_PCT",
+                                    ascending=False)[['Player', 'SV_PCT']]
+target_PCT = subset_PCT[subset_PCT.Player=="Jake Allen"].SV_PCT.values[0]
+print min(np.where(subset_PCT.SV_PCT.values == target_PCT)[0])+1
