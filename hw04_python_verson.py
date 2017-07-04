@@ -27,26 +27,29 @@ def ANOVA(model, X, y):
             'df_E': df_E,
             'MSE': MSE,
             'F_stat': F_stat,
-            'p_of_F': p_of_F})
+            'p_value': p_of_F})
 
 def get_RMSE(model, X, y):
     resid = y-model.predict(X)
     RMSE = ((resid**2).mean())**.5
     return(RMSE)
 
-## Not finished
 def Summary(model, X, y):
-    C_diag = np.diag(np.linalg.inv(np.dot(np.transpose(X), X)))
-    if model.intercept_ != 0:
-        se = (((y-model.predict(X))**2).sum()/(X.shape[0]-X.shape[1]-1))**.5
-    else:
-        se = (((y-model.predict(X))**2).sum()/(X.shape[0]-X.shape[1]))**.5
+    se = (((y-model.predict(X))**2).sum()/(X.shape[0]-X.shape[1]-1))**.5
+    X_1 = X.copy()
+    X_1['Intercept'] = pd.Series(np.array([1]*(X_1.shape[0]+1)))
+    C_diag = np.diag(np.linalg.inv(np.dot(np.transpose(X_1), X_1)))
+    coefficients = np.append(model.coef_, model.intercept_)
     se_beta = se*C_diag**.5
-    t_stat = (model.coef_-0.0)/se_beta
-    return(se_beta)
+    t_stat = (coefficients-0.0)/se_beta
+    p_of_t = 2*ss.t.sf(abs(t_stat), X.shape[0]-X.shape[1]-1)
+    result = pd.DataFrame({"Coefficients": coefficients,
+                           "Std_Error":se_beta,
+                           "t_value": t_stat,
+                           "p_value": p_of_t},
+                          index = np.append(X.columns, "Intercept"))
+    return(result)
 
-a = Summary(regr_1a, X_1a, y_1)
-X_1a.shape[0]
 
 # Question 1
 ## (a)
@@ -117,7 +120,7 @@ y_3 = goalies.W
 regr3_full = LinearRegression().fit(X_3a, y_3)
 result_3a = ANOVA(regr3_full, X_3a, y_3)
 print "F-stat is {}.".format(result_3a['F_stat'])
-print "P-value is {}.".format(result_3a['p_of_F'])
+print "P-value is {}.".format(result_3a['p_value'])
 
 ## (b)
 RMSE_3b = get_RMSE(regr3_full, X_3a, y_3)
