@@ -394,7 +394,7 @@ mean(lower_90 <= 1 & upper_90 >=1)
 **(d)** Based on these intervals, what proportion of the simulations would reject the test $H_0: \beta_0 = 0$ vs $H_1: \beta_0 \neq 0$ at $\alpha = 0.10$?
 
 ```{r}
-mean(lower_90 <= 0 & upper_90 >= 0)
+1 - mean(lower_90 <= 0 & upper_90 >= 0)
 ```
 
 **(e)** For each of the $\hat{\beta}_0$ that you simulated calculate a 99% confidence interval. Store the lower limits in a vector `lower_99` and the upper limits in a vector `upper_99`.
@@ -422,5 +422,5 @@ mean(lower_99<=1 & upper_99>=1)
 **(g)** Based on these intervals, what proportion of the simulations would reject the test $H_0: \beta_0 = 0$ vs $H_1: \beta_0 \neq 0$ at $\alpha = 0.01$?
 
 ```{r}
-mean(lower_99 <= 0 & upper_99 >= 0)
+1 - mean(lower_99 <= 0 & upper_99 >= 0)
 ```
