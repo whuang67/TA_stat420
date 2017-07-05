@@ -219,8 +219,9 @@ lower_99 = beta_0s-crit99*se_beta_0s
 upper_99 = beta_0s+crit99*se_beta_0s
 
 ## (f)
-reject99 = 1-np.mean((lower_90 <= 1) & (upper_90 >=1))
-print "{:.4f} would reject H0: beta_0 = 0.".format(reject99)
 percent99 = np.mean((lower_99 <= 1) & (upper_99 >=1))
 print "{:.4f} contains the true value of beta_0.".format(percent99)
+
 ## (g)
+reject99 = 1-np.mean((lower_99 <= 1) & (upper_99 >=1))
+print "{:.4f} would reject H0: beta_0 = 0.".format(reject99)
