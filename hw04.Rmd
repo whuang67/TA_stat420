@@ -1,0 +1,391 @@
+---
+title: 'STAT 420: Homework 4'
+author: "D. Unger, Summer 2017"
+date: 'Due: Monday, July 10 by 11:50 PM CDT'
+output:
+  html_document:
+    theme: readable
+    toc: yes
+  pdf_document:
+    toc: yes
+---
+
+# Directions
+
+Students are encouraged to work together on homework using the discussion boards. However, sharing, copying or providing any part of a homework solution or code is an infraction of the University's rules on Academic Integrity. Any violation will be punished as severely as possible.
+
+- Your assignment must be submitted through the [submission link](https://compass2g.illinois.edu/webapps/assignment/uploadAssignment?content_id=_2654922_1&course_id=_31866_1&group_id=&mode=cpview) on **Compass 2g.** You are required to attach two (and only two) files to the *same* submission:
+    - Your RMarkdown file which should be saved as `hw04_yourNetID.Rmd`. For example `hw04_dunger.Rmd`.
+    - The result of knitting your RMarkdown file as `hw04_yourNetID.html`. For example `hw04_dunger.html`.
+    - Any outside data provided as a `.csv` file used for the homework.
+- To submit the two files, you must "zip" them together into a single `zip` file, and then submit that one file.
+- Your resulting `.html` file will be considered a "report" which is the material that will determine the majority of your grade. Be sure to visibly include all `R` code and output that is relevant to answering the exercises. (You do not need to include irrelevant code you tried that resulted in error or did not answer the question correctly.)
+- You are granted an unlimited number of submissions, but only the last submission *before* the deadline will be viewed and graded.
+- If you use [this `.Rmd` file as a template](hw04.Rmd), be sure to remove the directions section, and consider removing `eval = FALSE` from any code chunks provided. (If you would like to run that code as part of your assignment.)
+- Your `.Rmd` file should be written such that, if it is placed in a folder with any data you are asked to import, it will Knit properly without modification. 
+- Unless otherwise stated, you may use `R` for each of the exercises.
+- Be sure to read each exercise carefully!
+- Include your Name and NetID in the final document, not only in your filenames.
+
+# Assignment
+
+## Exercise 1 (Using `lm` and `anova`)
+
+For this exercise we will use the data stored in [`nutrition.csv`](nutrition.csv). It contains the nutritional values per serving size for a large variety of foods as calculated by the USDA. It is a cleaned version totaling 5,138 observations and is current as of September 2015.
+
+The variables in the dataset are:
+
+- `ID` 
+- `Desc` - Short description of food
+- `Water` - in grams
+- `Calories` 
+- `Protein` - in grams
+- `Fat` - in grams
+- `Carbs` - Carbohydrates, in grams
+- `Fiber` - in grams
+- `Sugar` - in grams
+- `Calcium` - in milligrams
+- `Potassium` - in milligrams
+- `Sodium` - in milligrams
+- `VitaminC` - Vitamin C, in milligrams
+- `Chol` - Cholesterol, in milligrams
+- `Portion` - Description of standard serving size used in analysis
+
+
+**(a)** Fit a model with `Calories` as the response and all other continuous variables as predictors. Leave out `ID`, `Desc`, and `Portion`. Store the results in a variable called `nut_full`. Use an $F$-test to test the significance of the regression. Report the following:
+
+- The null and alternative hypotheses.
+- The value of the test statistic.
+- The p-value of the test.
+- A statistical decision at $\alpha = 0.01$.
+- A conclusion in the context of the problem.
+ 
+When reporting these, you should explicitly state them in your document, not assume that a reader will find and interpret them from a large block of `R` output.
+
+```{r}
+nutrition <- read.csv("nutrition.csv")
+nutrition$ID <- NULL
+nutrition$Desc <- NULL
+nutrition$Portion <- NULL
+nut_full <- lm(Calories ~., data = nutrition)
+summary(nut_full)
+F_stat <- summary(nut_full)$fstatistic
+p_val <- pf(F_stat[1], F_stat[2], F_stat[3], lower.tail = FALSE)
+print(F_stat[1])
+print(p_val)
+```
+
+**(b)** Now that you have made a decision about the validity of the full model based on the $F$-test, it's time to dig deeper. Look at the results of the single parameter $t$-tests by calling for the coefficient summary table of `nut_full`. Does what you observe in those results support or refute your response in part **(a)** in terms of practicality?
+
+Stated another way, after considering those single parameter tests for each predictor, would you want to change your mind about the usefulness or lack thereof of the full model? Explain your response.
+
+```{r}
+summary(nut_full)
+```
+
+**(c)** Fit a model with Calories as the response and `Carbs`, `Sodium`, `Fat`, and `Protein` as predictors. Use an $F$-test to test the significance of the regression. Report the following:
+ 
+- The null and alternative hypotheses.
+- The value of the test statistic.
+- The p-value of the test.
+- A statistical decision at $\alpha = 0.01$.
+- A conclusion in the context of the problem.
+
+```{r}
+nut_sub <- lm(Calories ~ Carbs + Sodium + Fat + Protein, data=nutrition)
+F_stat <- summary(nut_sub)$fstatistic
+p_val <- pf(F_stat[1], F_stat[2], F_stat[3], lower.tail = FALSE)
+print(F_stat)
+print(p_val)
+```
+
+**(d)** For each of the predictors in part **(c)**, perform a $t$-test for the significance of its regression coefficient. Report the following for each:
+ 
+- The null and alternative hypotheses.
+- The value of the test statistic.
+- The p-value of the test.
+- A statistical decision at $\alpha = 0.01$.
+
+```{r}
+summary(nut_sub)
+```
+
+**(e)** Based on your results in part **(d)**, do you still prefer the model in part **(c)**, or is there instead a model with three predictors that you prefer? Briefly explain.
+
+## Exercise 2 (Using `lm` for Inference)
+
+For this exercise we will again use the nutrition data. 
+
+**(a)** Fit the following multiple linear regression model in `R`. Use `Calories` as the response and `Carbs`, `Fat`, and `Protein` as predictors.
+
+\[
+Y_i = \beta_0 + \beta_1 x_{i1} + \beta_2 x_{i2} + \beta_3 x_{i3} + \epsilon_i.
+\]
+
+Here,
+
+- $Y_i$ is `Calories`
+- $x_{i1}$ is `Carbs`
+- $x_{i2}$ is `Fat`
+- $x_{i3}$ is `Protein`.
+
+Use an $F$-test to test the significance of the regression. Report the following:
+ 
+- The null and alternative hypotheses.
+- The value of the test statistic.
+- The p-value of the test.
+- A statistical decision at $\alpha = 0.01$.
+- A conclusion in the context of the problem.
+
+When reporting these, you should explicitly state them in your document, not assume that a reader will find and interpret them from a large block of `R` output.
+
+```{r}
+nut_model3 <- lm(Calories ~ Carbs + Fat + Protein, data=nutrition)
+summary(nut_model3)$fstatistic
+
+```
+
+**(b)** Output only the estimated regression coefficients. Interpret all $\hat{\beta}_j$ coefficients in the context of the problem.
+
+```{r}
+coef(nut_model3)
+```
+
+**(c)** Use your model to predict the amount of `Calories` in a Big Mac. According to [McDonald's publicized nutrition facts](http://nutrition.mcdonalds.com/getnutrition/nutritionfacts.pdf), the Big Mac contains 47g of Carbohydrates, 28g of Fat, and 25g of Protein. Do you feel confident in this prediction? Briefly explain.
+
+```{r}
+predict(nut_model3, data.frame(Carbs=47, Fat=28, Protein=25))
+```
+
+**(d)** Calculate the standard deviation, $s_y$, for the observed values in the Calories variable. Report the value of $s_e$ from your multiple regression model. Interpret both estimates in the context of this problem.
+
+```{r}
+sd(nutrition$Calories)
+summary(nut_model3)$sigma
+```
+
+**(e)** Report the value of $R^2$ for the model. Interpret its meaning in the context of the problem.
+
+```{r}
+summary(nut_model3)$r.squared
+```
+
+**(f)** Calculate a 90% confidence interval for $\beta_2$. Give an interpretation of the interval in the context of the problem.
+
+```{r}
+confint(nut_model3, level = .9)
+```
+
+**(g)** Calculate a 95% confidence interval for $\beta_0$. Give an interpretation of the interval in the context of the problem.
+ 
+```{r}
+confint(nut_model3, level=.95) 
+```
+
+**(h)** Use a 99% confidence interval to estimate the mean Calorie content of a small order of McDonald’s french fries that has 30g of Carbohydrates, 11g of Fat, and 2g of Protein. Interpret the interval in context.
+
+```{r}
+predict(nut_model3,
+        newdata = data.frame(Carbs=30, Fat=11, Protein=2),
+        interval = "confidence",
+        level =.99)
+```
+
+**(i)** Use a 90% prediction interval to predict the Calorie content of new healthy menu item that has 11g of Carbohydrates, 1.5g of Fat, and 1g of Protein. Interpret the interval in context.
+
+```{r}
+predict(nut_model3,
+        newdata = data.frame(Carbs=11, Fat=1.5, Protein=1),
+        interval = "prediction",
+        level =.9)
+```
+
+## Exercise 3 (Comparing Models)
+
+For this exercise we will once again use the data stored in [`goalies2015_cleaned.csv`](goalies2015_cleaned.csv). It contains regular season (not including playoffs) career data for 462 players in the National Hockey League who played goaltender through the 2014-2015 season. The variables in the dataset are:
+ 
+- `W` - Wins
+- `GA` - Goals Against
+- `SA` - Shots Against
+- `SV` - Saves
+- `SV_PCT` - Save Percentage
+- `GAA` - Goals Against Average
+- `SO` - Shutouts
+- `MIN` - Minutes
+- `PIM` - Penalties in Minutes
+ 
+**(a)** Fit a multiple linear regression model with Wins as the response and all other variables as the predictors.
+ 
+Use an $F$-test to test the significance of the regression. Report the following:
+ 
+- The null and alternative hypotheses.
+- The value of the test statistic.
+- The p-value of the test.
+- A statistical decision at $\alpha = 0.10$.
+- A conclusion in the context of the problem.
+ 
+When reporting these, you should explicitly state them in your document, not assume that a reader will find and interpret them from a large block of `R` output.
+
+```{r}
+goalies <- read.csv("goalies_cleaned2015.csv")
+goalies_full <- lm(W ~., data = goalies)
+F_stat <- summary(goalies_full)$fstatistic
+p_val <- pf(F_stat[1], F_stat[2], F_stat[3], lower.tail = FALSE)
+print(F_stat[1])
+print(p_val)
+```
+
+**(b)** Calculate the RMSE of this full model. Report the residual standard error of this full model. What is the relationship of these two values?
+
+Recall, we have defined RMSE as,
+
+\[
+RMSE = \sqrt{\frac{1}{n} \sum_{i = 1}^{n}(y_i - \hat{y}_i)^2}.
+\]
+
+```{r}
+sqrt(mean(goalies_full$residuals^2))
+```
+
+**(c)** Fit a model with Wins as the response and with Goals Against, Goals Against Average, Saves, and Save Percentage as the predictors. Calculate the RMSE of this model.
+
+```{r}
+goalies_model2 <- lm(W ~ GA + GAA+ SV+SV_PCT, data=goalies)
+sqrt(mean(goalies_model2$residuals^2))
+```
+
+**(d)** Fit a model with Wins as the response and with Goals Against Average and Save Percentage as the predictors. Calculate the RMSE of this model.
+
+```{r}
+goalies_model3 <- lm(W ~ GAA + SV_PCT, data=goalies)
+sqrt(mean(goalies_model3$residuals^2))
+```
+
+**(e)** Based on the previous three models, which model is most helpful for predicting wins? Briefly explain.
+ 
+**(f)** Conduct an ANOVA $F$-test comparing the models in parts **(c)** and **(d)**. Report the following:
+ 
+- The null and alternative hypotheses.
+- The value of the test statistic.
+- The p-value of the test.
+- A statistical decision at $\alpha = 0.10$.
+- A conclusion in the context of the problem.
+ 
+When reporting these, you should explicitly state them in your document, not assume that a reader will find and interpret them from a large block of `R` output.
+
+```{r}
+anova(goalies_model3, goalies_model2)
+```
+
+## Exercise 4 (Simulating Multiple Regression)
+
+For this exercise we will simulate data from the following model:
+
+\[
+Y_i = \beta_0 + \beta_1 x_{i1} + \beta_2 x_{i2} + \beta_3 x_{i3} + \beta_4 x_{i4} + \epsilon_i
+\]
+
+Where $\epsilon_i \sim N(0, \sigma^2).$ Also, the parameters are known to be:
+
+- $\beta_0 = 2$
+- $\beta_1 = 3$
+- $\beta_2 = 4$
+- $\beta_3 = 0$
+- $\beta_4 = 1$
+- $\sigma^2 = 16$
+
+We will use samples of size `n = 25`.
+
+We will verify the distribution of $\hat{\beta}_1$ as well as investigate some hypothesis tests.
+
+**(a)** We will first generate the $X$ matrix and data frame which will be used throughout the exercise. Create the following 9 variables:
+
+- `x0`: a vector of length `n` which contains all `1`.
+- `x1`: a vector of length `n` which is randomly drawn from a uniform distribution between `0` and `10`.
+- `x2`: a vector of length `n` which is randomly drawn from a uniform distribution between `0` and `10`.
+- `x3`: a vector of length `n` which is randomly drawn from a uniform distribution between `0` and `10`.
+- `x4`: a vector of length `n` which is randomly drawn from a uniform distribution between `0` and `10`.
+- `X`: a matrix which contains `x0`, `x1`, `x2`, `x3`, `x4` as its columns.
+- `C`: the $C$ matrix which is defined as $(X^\top X)^{-1}$.
+- `y`: a vector of length `n` which contains all `0`.
+- `ex_4_data`: a data frame which stores `y` and the **four** predictor variables. `y` is currently a placeholder which we will update during the simulation.
+
+Report the diagonal of `C` as well as the 10th row of `ex_4_data`. For this exercise we will use the seed `42`.
+
+```{r}
+set.seed(42)
+n = 25
+x0 <- rep(1, n)
+x1 <- runif(n, 0, 10)
+x2 <- runif(n, 0, 10)
+x3 <- runif(n, 0, 10)
+x4 <- runif(n, 0, 10)
+X <- cbind(x0, x1, x2, x3, x4)
+C <- solve(t(X) %*% X)
+y <- rep(0, n)
+ex_4_data <- data.frame(y, x1, x2, x3, x4)
+print(diag(C))
+print(ex_4_data[10, ])
+```
+
+**(b)** Create three vectors of length `1500` which will store results from the simulation in part **(c)**. Call them `beta_hat_1`, `beta_2_pval`, and `beta_3_pval`.
+
+```{r}
+beta_hat_1 <- rep(NA, 1500)
+beta_2_pval <- rep(NA, 1500)
+beta_3_pval <- rep(NA, 1500)
+```
+
+**(c)** Simulate 1500 samples of size `n = 25` from the model above. Each time update the `y` value of `ex_4_data`. Then use `lm()` to fit a multiple regression model. Each time store:
+
+- The value of $\hat{\beta}_1$ in `beta_hat_1`.
+- The p-value for the two-sided test of $\beta_2 = 0$ in `beta_2_pval`.
+- The p-value for the two-sided test of $\beta_3 = 0$ in `beta_3_pval`.
+
+```{r}
+set.seed(42)
+for(i in 1:1500){
+  ex_4_data$y <- 2+3*ex_4_data$x1+4*ex_4_data$x2+ex_4_data$x4+rnorm(n, 0, 4)
+  model <- lm(y ~., data=ex_4_data)
+  a <- summary(model)$coefficients
+  beta_hat_1[i] <- a[2, 1]
+  beta_2_pval[i] <- a[3, 4]
+  beta_3_pval[i] <- a[4, 4]
+}
+```
+
+**(d)** Based on the known values of $X$, what is the true distribution of $\hat{\beta}_1$?
+
+```{r}
+# Mean = 3,
+# Std = 16*C[2, 2] = 0.07316889
+```
+
+**(e)** Calculate the mean and variance of `beta_hat_1`. Are they close to what we should expect? Plot a histogram of `beta_hat_1`. Add a curve for the true distribution of $\hat{\beta}_1$. Does the curve seem to match the histogram?
+
+```{r, message=FALSE, warning=FALSE}
+mean(beta_hat_1)
+sd(beta_hat_1)
+library(ggplot2)
+ggplot() +
+  geom_histogram(mapping = aes(x=beta_hat_1,
+                               y=..density..),
+                 color = "white") +
+  stat_function(mapping = aes(x=beta_hat_1),
+                fun = dnorm,
+                args = list(mean = 3,
+                            sd = 0.07316889^.5),
+                color = "red")
+```
+
+**(f)** What proportion of the p-values stored in `beta_3_pval` are less than 0.05? Is this what you would expect?
+
+```{r}
+mean(beta_3_pval < .05)
+```
+
+**(g)** What proportion of the p-values stored in `beta_2_pval` are less than 0.05? Is this what you would expect?
+
+```{r}
+mean(beta_2_pval < .05)
+```
