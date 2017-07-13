@@ -1,0 +1,571 @@
+---
+title: 'STAT 420: Homework 5'
+author: "D. Unger, Summer 2017"
+date: 'Due: Monday, July 17 by 11:50 PM CDT'
+output:
+  html_document:
+    theme: readable
+    toc: yes
+---
+
+Students are encouraged to work together on homework using the discussion boards. However, sharing, copying or providing any part of a homework solution or code is an infraction of the University's rules on Academic Integrity. Any violation will be punished as severely as possible.
+
+- Your assignment must be submitted through the [submission link](https://compass2g.illinois.edu/webapps/assignment/uploadAssignment?content_id=_2660169_1&course_id=_31866_1&group_id=&mode=cpview) on **Compass 2g.** You are required to attach two (and only two) files to the *same* submission:
+    - Your RMarkdown file which should be saved as `hw05_yourNetID.Rmd`. For example `hw05_dunger.Rmd`.
+    - The result of knitting your RMarkdown file as `hw05_yourNetID.html`. For example `hw05_dunger.html`.
+    - Any outside data provided as a `.csv` file used for the homework.
+- To submit the two files, you must "zip" them together into a single `zip` file, and then submit that one file.
+- Your resulting `.html` file will be considered a "report" which is the material that will determine the majority of your grade. Be sure to visibly include all `R` code and output that is relevant to answering the exercises. (You do not need to include irrelevant code you tried that resulted in error or did not answer the question correctly.)
+- You are granted an unlimited number of submissions, but only the last submission *before* the deadline will be viewed and graded.
+- If you use [this `.Rmd` file as a template](hw05.Rmd), be sure to remove the directions section, and consider removing `eval = FALSE` from any code chunks provided. (If you would like to run that code as part of your assignment.)
+- Your `.Rmd` file should be written such that, if it is placed in a folder with any data you are asked to import, it will Knit properly without modification. 
+- Unless otherwise stated, you may use `R` for each of the exercises.
+- Be sure to read each exercise carefully!
+- Include your Name and NetID in the final document, not only in your filenames.
+
+# Assignment
+
+## Exercise 1 (EPA Emissions Data)
+
+For this exercise we will use the data stored in [`epa2015.csv`](epa2015.csv). It contains detailed descriptions of 4,411 vehicles manufactured in 2015 used for fuel economy testing [as performed by the Environment Protection Agency]( https://www3.epa.gov/otaq/tcldata.htm). The variables in the dataset are:  
+ 
+- `Make` - manufacturer
+- `Model` - model of vehicle
+- `ID` - manufacturer defined vehicle identification number within EPA's computer system (not a VIN number)
+- `disp` - cubic inch displacement of test vehicle
+- `type` - car, truck, or both (for vehicles that meet specifications of both car and truck, like smaller SUVs or crossovers)
+- `horse` - rated horsepower, in foot-pounds per second
+- `cyl` - number of cylinders
+- `lockup` - vehicle has transmission lockup; N or Y
+- `drive` - drivetrain system code
+    - A = All wheel drive
+    - F = Front wheel drive
+    - P = Part-time 4-wheel drive
+    - R = Rear wheel drive
+    - 4 = 4-wheel drive
+- `weight` - test weight, in pounds
+- `axleratio` - axle ratio
+- `nvratio` - n/v ratio (engine speed versus vehicle speed at 50 mph)
+- `THC` - total hydrocarbons, in grams per mile (g/mi)
+- `CO` - Carbon monoxide (a regulated pollutant), in g/mi
+- `CO2` - Carbon dioxide (the primary byproduct of all fossil fuel combustion), in g/mi
+- `mpg` - fuel economy, in miles per gallon
+
+We will attempt to model `CO2` using both `horse` and `type`. In practice we would use many more predictors, but limiting ourselves to these two, one numeric and one factor, will allow us to create a number of plots.
+
+**(a)** Load the data, and check its structure using `str()`. Verify that `type` is a factor, if not, coerce it to be a factor.
+
+```{r}
+epa2015 <- read.csv("epa2015.csv")
+str(epa2015)
+```
+
+**(b)** Make a scatterplot of `CO2` versus `horse`. Use a different color point for each vehicle `type`. Which color is which `type`?
+
+```{r}
+library(ggplot2)
+ggplot() +
+  geom_point(data = epa2015,
+             mapping = aes(x = horse,
+                           y = CO2,
+                           color = type))
+```
+
+**(c)** Fit a SLR model with `CO2` as the response and only `horse` as the predictor. Recreate your plot and add the fitted regression line. Comment on how well this line models the data. Give an estimate for the average change in `CO2` for a one foot-pound per second increase in `horse` for a vehicle of type `truck`. Give a 95% prediction interval using this model for the `CO2` of a Subaru Impreza Wagon which is a vehicle with 148 horsepower and is considered type `Both`. (Interestingly, the dataset gives the wrong drivetrain for most Subarus in this dataset, as they are almost all listed as `F`, when they are in fact All-Wheel-Drive.)
+
+```{r}
+SLR <- lm(CO2 ~ horse, data=epa2015)
+ggplot() +
+  geom_point(data = epa2015,
+             mapping = aes(x = horse,
+                           y = CO2,
+                           color = type)) +
+  geom_abline(slope = coef(SLR)[2],
+              intercept = coef(SLR)[1])
+predict(SLR, newdata=data.frame(horse = 148), interval="prediction")
+```
+
+**(d)** Fit an additive multiple regression model with `CO2` as the response and `horse` and `type` as the predictors. Recreate your plot and add the fitted regression "lines" with the same colors as their respective points. Comment on how well these lines models the data. Give an estimate for the average change in `CO2` for a one foot-pound per second increase in `horse` for a vehicle of type `truck`. Give a 95% prediction interval using this model for the `CO2` of a Subaru Impreza Wagon which is a vehicle with 148 horsepower and is considered type `Both`.
+
+```{r}
+Model_1d <- lm(CO2 ~ horse+type, data = epa2015)
+ggplot() +
+  geom_point(data = epa2015,
+             mapping = aes(x = horse,
+                           y = CO2,
+                           color = type)) +
+  geom_abline(slope = coef(Model_1d)[2],
+              intercept = coef(Model_1d)[1],
+              color = "orange") +
+  geom_abline(slope = coef(Model_1d)[2],
+              intercept = coef(Model_1d)[1]+coef(Model_1d)[3],
+              color = 'green') +
+  geom_abline(slope = coef(Model_1d)[2],
+              intercept = coef(Model_1d)[1]+coef(Model_1d)[4],
+              color = 'blue')
+predict(Model_1d, newdata=data.frame(horse = 148,
+                                     type = "Both"), interval="prediction")
+```
+
+**(e)** Fit an interaction multiple regression model with `CO2` as the response and `horse` and `type` as the predictors. Recreate your plot and add the fitted regression "lines" with the same colors as their respective points. Comment on how well these lines models the data. Give an estimate for the average change in `CO2` for a one foot-pound per second increase in `horse` for a vehicle of type `truck`. Give a 95% prediction interval using this model for the `CO2` of a Subaru Impreza Wagon which is a vehicle with 148 horsepower and is considered type `Both`.
+
+```{r}
+Model_1e <- lm(CO2 ~ horse*type, data=epa2015)
+summary(Model_1e)
+ggplot() +
+  geom_point(data = epa2015,
+             mapping = aes(x = horse,
+                           y = CO2,
+                           color = type)) +
+  geom_abline(slope = coef(Model_1e)[2],
+              intercept = coef(Model_1e)[1],
+              color = "orange") +
+  geom_abline(slope = coef(Model_1e)[2]+coef(Model_1e)[5],
+              intercept = coef(Model_1e)[1]+coef(Model_1e)[3],
+              color = 'green') +
+  geom_abline(slope = coef(Model_1e)[2]+coef(Model_1e)[6],
+              intercept = coef(Model_1e)[1]+coef(Model_1e)[4],
+              color = 'blue')
+predict(Model_1e, newdata=data.frame(horse = 148,
+                                     type = "Both"), interval = 'prediction')
+```
+
+**(f)** You will perform $F$-tests later in the exercise, but for now, based solely on the three previous plots, which model is preferred: SLR, additive, or interaction?
+
+**(g)** Use an ANOVA $F$-test to compare the SLR and additive models. Based on this test and a significance level of $\alpha = 0.01$, which model is preferred?
+
+```{r}
+anova(SLR, Model_1d)
+```
+
+**(h)** Use an ANOVA $F$-test to compare the additive and interaction models. Based on this test and a significance level of $\alpha = 0.01$, which model is preferred?
+
+```{r}
+anova(Model_1d, Model_1e)
+```
+
+## Exercise 2 (Hospital SUPPORT Data)
+
+For this exercise we will use the data stored in [`hospital.csv`](hospital.csv). It contains a random sample of 580 seriously ill hospitalized patients from a famous study called "SUPPORT" (Study to Understand Prognoses Preferences Outcomes and Risks of Treatment). As the name suggests, the purpose of the study was to determine what factors affected or predicted outcomes, such as how long a patient remained in the hospital. The variables in the dataset are:  
+ 
+- `Days` - Days to death or hospital discharge
+- `Age` - Age on day of hospital admission
+- `Sex` - female or male
+- `Comorbidity` - Patient diagnosed with more than one chronic disease
+- `Charges` - Hospital charges, in dollars
+- `EdYears` - Years of education
+- `Education` - Education level; high or low
+- `Income` - Income level; high or low
+- `Care` - Level of care required; high or low
+- `Race` - non-white or white
+- `Pressure` - Blood pressure, in mmHg
+- `WhiteBlood` - White blood cell count, in gm/dL
+- `Rate` - Heart rate, in bpm
+
+For this exercise, we will use `Charges`, `Pressure`, `Care`, and `Race` to model `Days`.
+
+**(a)** Load the data, and check its structure using `str()`. Verify that `Care` and `Race` are factors, if not, coerce them to be factors. What are the levels of `Care` and `Race`.
+
+```{r}
+hospital <- read.csv("hospital.csv")
+str(hospital)
+```
+
+**(b)** Fit an additive multiple regression model with `Days` as the response using `Charges`, `Pressure`, `Care`, and `Race` as predictors. What does `R` choose as the reference level for `Care` and `Race`?
+
+```{r}
+Model_2b <- lm(Days ~ Charges + Pressure + Care + Race, data = hospital)
+summary(Model_2b)
+```
+
+**(c)** Fit a multiple regression model with `Days` as the response. Use the main effects of `Charges`, `Pressure`, `Care`, and `Race`, as well as the interaction of `Care` with each of the numeric predictors as predictors. (That is, the interaction of `Care` with `Charges` and the interaction of `Care` with `Pressure`.) Use a statistical test to compare this model to the additive model using a significance level of $\alpha = 0.01$. Which do you prefer?
+
+```{r}
+Model_2c <- lm(Days ~ Charges*Care + Pressure*Care + Care + Race, data = hospital)
+# summary(Model_2c)
+anova(Model_2b, Model_2c)
+```
+
+**(d)** Fit a multiple regression model with `Days` as the response. Use the predictors from the model in **(c)** as well as the interaction of `Race` with each of the numeric predictors. (That is, the interaction of `Race` with `Charges` and the interaction of `Race` with `Pressure`.) Use a statistical test to compare this model to the additive model using a significance level of $\alpha = 0.01$. Which do you prefer?
+
+```{r}
+#Model_2d <- lm(Days ~ (Charges+Pressure)*Race +(Charges+Pressure)*Care, data = hospital)
+Model_2d <- lm(Days ~ (Charges+Pressure)*(Race+Care), data=hospital)
+#anova(Model_2b, Model_2d)
+anova(Model_2b, Model_2d)
+```
+
+**(e)** Using the model in **(d)** give an estimate of the change in average `Days` for a one-unit increase in `Pressure` for a `"white"` patient that required a high level of care.
+
+```{r}
+#a
+```
+
+**(f)** Find a model using the four predictors that we have been considering that is more flexible than the model in **(d)** which is also statistical significant as compared to the model in **(d)** at a significance level of $\alpha = 0.01$.
+
+```{r}
+Model_2f <- lm(Days ~ Pressure*Race*Charges*Care, data = hospital)
+# summary(Model_2f)
+anova(Model_2d, Model_2f)
+```
+
+## Exercise 3 (Fish Data)
+
+For this exercise we will use the data stored in [`fish.csv`](fish.csv). It contains data for 158 fish of 7 different species all gathered from the same lake in one season. The variables in the dataset are:  
+ 
+- `Species` - Common Name (*Latin name*)
+    + 1 = Bream (*Abramis brama*)
+    + 2 = Whitewish (*Leusiscus idus*)
+    + 3 = Roach (*Leuciscus rutilus*)
+    + 4 = <None> (*Abramis bjrkna*)
+    + 5 = Smelt (*Osmerus eperlanus*)
+    + 6 = Pike (*Esox Lucius*)
+    + 7 = Perch (*Perca fluviatilis*)
+- `Weight` - Weight of the fish, in grams
+- `Length1` - Length from the nose to the beginning of the tail, in cm
+- `Length2` - Length from the nose to the notch of the tail, in cm
+- `Length3` - Length from the nose to the end of the tail, in cm
+- `HeightPct` - Maximal height as % of Length3
+- `WidthPct` - Maximal width as % of Length3
+- `Sex` - 0 = female, 1 = male
+
+We will attempt to predict `Weight` using `Length1`, `HeightPct`, and `WidthPct`.
+
+**(a)** Use `R` to fit the model
+
+\[
+Y = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + \beta_3 x_3 + \beta_4 x_1 x_2 + \beta_5 x_1 x_3 + \beta_6 x_2 x_3 + \beta_7 x_1 x_2 x_3 + \epsilon,
+\]
+
+where
+
+- $Y$ is `Weight`,
+- $x_1$ is `Length1`,
+- $x_2$ is `HeightPct`,
+- $x_3$ is `WidthPct`.
+
+Report the estimated coefficients of the model.
+
+```{r}
+fish <- read.csv("fish.csv")
+Model_3a <- lm(Weight ~ Length1*HeightPct*WidthPct, data = fish)
+summary(Model_3a)$coefficients
+```
+
+**(b)** Consider fitting a smaller model in `R`.
+
+```{r, eval = FALSE}
+fish_smaller = lm(Weight ~ Length1 + HeightPct * WidthPct, data = fish)
+```
+
+Use a statistical test to compare this model with the previous. Report the following:
+
+- The null and alternative hypotheses in terms of the model given in **(a)**.
+- The value of the test statistic.
+- The p-value of the test.
+- A statistical decision using a significance level of $\alpha = 0.05$.
+- Which model you prefer.
+
+```{r}
+fish_smaller = lm(Weight ~ Length1 + HeightPct * WidthPct, data = fish)
+anova(fish_smaller, Model_3a)
+```
+
+**(c)** Give an expression based on the model in **(a)** for the true change in average weight for a one cm increase in `Length1` for a fish with a `HeightPct` of 20 and a `WidthPct` of 10.
+
+```{r}
+a = predict(Model_3a, newdata=data.frame(Length1 = 1,
+                                         HeightPct = 20,
+                                         WidthPct = 10))
+b = predict(Model_3a, newdata=data.frame(Length1 = 2,
+                                         HeightPct = 20,
+                                         WidthPct = 10))
+b - a
+```
+
+**(d)** Give an expression based on the smaller model in **(b)** for the true change in average weight for a one cm increase in `Length1` for a fish with a `HeightPct` of 20 and a `WidthPct` of 10.
+
+```{r}
+a = predict(fish_smaller, newdata=data.frame(Length1 = 1,
+                                             HeightPct = 20,
+                                             WidthPct = 10))
+b = predict(fish_smaller, newdata=data.frame(Length1 = 2,
+                                             HeightPct = 20,
+                                             WidthPct = 10))
+b - a
+```
+
+## Exercise 4 ($t$-test for a Linear Model)
+
+In this exercise, we will try to convince ourselves that a two-sample $t$-test assuming equal variance is the same as a $t$-test for the coefficient in front of a single factor variable in a linear model.
+
+First we setup the data frame that we will use throughout.
+
+```{r}
+n = 16
+
+ex4 = data.frame(
+  groups = c(rep("A", n / 2), rep("B", n / 2)),
+  values = rep(0, n))
+str(ex4)
+```
+
+We will use a total sample size of `16`, `8` for each group. The `groups` variable splits the data into two groups, `A` and `B`, which will be the grouping variable for the $t$-test, and a factor variable in a regression. The `values` variable will store simulated data.
+
+We will repeat the following process a number of times.
+
+```{r}
+ex4$values = rnorm(n, mean = 10, sd = 3) # simualte data
+summary(lm(values ~ groups, data = ex4))$coefficients
+t.test(values ~ groups, data = ex4, var.equal = TRUE)
+```
+
+We use `lm()` to test
+
+\[
+H_0: \beta_1 = 0
+\]
+
+for the model
+
+\[
+Y = \beta_0 + \beta_1 x_1 + \epsilon
+\]
+
+where $Y$ are the values of interest, and $x_1$ is a dummy variable that splits the data in two. We will let `R` take care of the dummy variable.
+
+We use `t.test()` to test
+
+\[
+H_0: \mu_A = \mu_B
+\]
+
+where $\mu_A$ is the mean for the `A` group, and $\mu_B$ is the mean for the `B` group.
+
+The following code sets up some variables for storage.
+
+```{r}
+num_sims = 100
+lm_t = rep(0, num_sims)
+lm_p = rep(0, num_sims)
+tt_t = rep(0, num_sims)
+tt_p = rep(0, num_sims)
+```
+
+- `lm_t` will store the test statistic for the test $H_0: \beta_1 = 0$.
+- `lm_p` will store the p-value for the test $H_0: \beta_1 = 0$.
+- `tt_t` will store the test statistic for the test $H_0: \mu_A = \mu_B$.
+- `tt_p` will store the p-value for the test $H_0: \mu_A = \mu_B$.
+
+The variable `num_sims` controls how many times we will repeat this process, which we have chosen to be `100`.
+
+**(a)** Set a seed equal to your UIN. Then write code that repeats the above process `100` times. Each time, store the appropriate values in `lm_t`, `lm_p`, `tt_t`, and `tt_p`. Specifically, each time you should use `ex4$values = rnorm(n, mean = 10, sd = 3)` to update the data. The grouping will always stay the same.
+
+```{r}
+uin = 671105713
+set.seed(uin)
+for(i in 1:num_sims){
+  ex4$values = rnorm(n, mean = 10, sd = 3) # simualte data
+  Coef = summary(lm(values ~ groups, data = ex4))$coefficients
+  t_test = t.test(values ~ groups, data = ex4, var.equal = TRUE)
+  lm_t[i] = Coef[2, 3]
+  lm_p[i] = Coef[2, 4]
+  tt_t[i] = t_test$statistic
+  tt_p[i] = t_test$p.value
+}
+```
+
+**(b)** Report the value obtained by running `mean(lm_t == tt_t)`, which tells us what proportion of the test statistics are equal. The result my be extremely surprising!
+
+```{r}
+mean(lm_t == tt_t)
+```
+
+**(c)** Report the value obtained by running `mean(lm_p == tt_p)`, which tells us what proportion of the p-values are equal. The result my be extremely surprising!
+
+```{r}
+mean(lm_p == tt_p)
+```
+
+**(d)** If you have done everything correctly so far, your answers to the last two parts won't indicate the equivalence we want to show! What the heck is going on here? The first issue is one of using a computer to do calculations. When a computer checks for equality, it demands **equality**, nothing can be different. However, when a computer performs calculations, it can only do so with a certain amount of precision. So if we calculate two quantities we know to be mathematically equal, they can differ in a computer due to essentially rounding errors. Instead of `mean(lm_p == tt_p)` run `all.equal(lm_p, tt_p)`. This will perform a similar calculation, but with a very small error tolerance for each equality. What is the result of running this code? What does it mean?
+
+```{r}
+all.equal(lm_p, tt_p)
+```
+
+**(e)** Your answer in **(d)** should now make much more sense. Then what is going on with the test statistics? Take a look at the values stored in `lm_t` and `tt_t`. What do you notice? Is there a relationship between the two? Can you explain why this is happening?
+
+```{r}
+all.equal(lm_t, tt_t)
+all.equal(abs(lm_t), abs(tt_t))
+```
+
+## Exercise 5 (Analysis of Variance, Power)
+
+Analysis of Variance (ANOVA) is a method we have used for comparing two models. Traditionally, it is used in the specific case of a designed experiment where an equal number of individuals are assigned to one of several treatment groups. We then use ANOVA to test for equality of means across several groups for some measured variable. That is, for example,
+
+\[
+H_0: \mu_A = \mu_B = \mu_C.
+\]
+
+Are the means of groups $A$, $B$, and $C$ the same, or is at least one different?
+
+Consider a setup where subjects are randomly assigned to one of three possible treatment groups:
+
+- `A`: Control
+- `B`: 200mg Caffeine
+- `C`: 400mg Caffeine
+
+Subjects are administered their treatment, then tested for their typing ability. Their words-per-minute is recorded. The experimenter would then like to test
+
+\[
+H_0: \mu_A = \mu_B = \mu_C.
+\]
+
+That is, are the average typing speeds of the three groups the same?
+
+We can actually frame this as a linear model. Consider,
+
+\[
+Y = \beta_0 + \beta_B x_B + \beta_C x_C + \epsilon
+\]
+
+where
+
+- $Y$ is the measured response, in this case words per minute.
+- $x_B$ is a dummy variable, which is `1` when an individual is in group `B`.
+- $x_C$ is a dummy variable, which is `1` when an individual is in group `C`.
+
+Then,
+
+- $\mu_A = \beta_0$,
+- $\mu_B = \beta_0 + \beta_B$,
+- $\mu_C = \beta_0 + \beta_C$.
+
+So, to test,
+
+\[
+H_0: \mu_A = \mu_B = \mu_C,
+\]
+
+we can instead test
+
+\[
+H_0: \beta_B = \beta_C = 0.
+\]
+
+Cool!
+
+Let's imagine we know the distribution of typing speed for the three groups.
+
+- `A`: $Y \sim N(\mu = 60, \sigma^2 = 16)$
+- `B`: $Y \sim N(\mu = 63, \sigma^2 = 16)$
+- `C`: $Y \sim N(\mu = 65, \sigma^2 = 16)$
+
+**(a)** Use the following code to simulate the above setup.
+
+```{r}
+mean_A = 60
+mean_B = 63
+mean_C = 65
+common_sd = 4
+
+group_size = 7
+
+set.seed(6)
+ex5 = data.frame(
+  treat = c(rep("A", group_size), rep("B", group_size), rep("C", group_size)),
+  wpm   = c(rnorm(group_size, mean_A, common_sd), 
+            rnorm(group_size, mean_B, common_sd), 
+            rnorm(group_size, mean_C, common_sd)))
+str(ex5)
+```
+
+Fit a linear model with `wpm` as the response, and the factor variable `treat` as the predictor. Use this model to give estimates for $\mu_A$, $\mu_B$ and $\mu_C$.
+
+```{r}
+Model_5a <- lm(wpm ~ treat, data = ex5)
+summary(Model_5a)
+# mu_A
+coef(Model_5a)[1]
+# mu_B
+coef(Model_5a)[1] + coef(Model_5a)[2]
+# mu_C
+coef(Model_5a)[1] + coef(Model_5a)[3]
+```
+
+**(b)** The following code will perform the test
+
+\[
+H_0: \mu_A = \mu_B = \mu_C.
+\]
+
+and return its p-value.
+
+```{r}
+anova(lm(wpm ~ treat, data = ex5))[1,]$P
+```
+
+Notice that this does not reject at $\alpha = 0.05$ despite the fact that we **know** that the null hypothesis is false. We know that
+
+- $\mu_A = 60$
+- $\mu_B = 63$
+- $\mu_C = 65$
+
+Start with the following code:
+
+```{r}
+num_sims = 1000
+p_vals = rep(0, num_sims)
+```
+
+Set a seed equal to your UIN, then repeat the simulation in part **(a)** 1000 times, each time storing the p-value for testing
+
+\[
+H_0: \mu_A = \mu_B = \mu_C.
+\]
+
+Create a histogram of the p-values you store.
+
+```{r}
+set.seed(671105713)
+for(i in 1:num_sims){
+  ex5$wpm=c(rnorm(group_size, mean_A, common_sd), 
+            rnorm(group_size, mean_B, common_sd), 
+            rnorm(group_size, mean_C, common_sd))
+  p_vals[i] = anova(lm(wpm ~ treat, data = ex5))[1,]$P
+}
+
+ggplot() +
+  geom_histogram(mapping = aes(x = p_vals),
+                 bins = 40,
+                 color = "white")
+```
+
+**(c)** The **power** of a test is the probability of rejecting the null, given that it is false. 
+
+\[
+P(\text{Rejct } H_0 | H_0 \text{ False})
+\]
+
+Well, we're in charge here, and we are simulating data from a setup where the null **is false**. Estimate the power of the test
+
+\[
+H_0: \mu_A = \mu_B = \mu_C
+\]
+
+for three different $\alpha$ values,
+
+- $\alpha = 0.10$
+- $\alpha = 0.05$
+- $\alpha = 0.01$
+
+using the alternative hypothesis we know to be true. (A specific case of the null being false. The power would be different for a different false null hypothesis.)
+
+Hint: A proportion can be an estimate of a true probability. Compare the p-values you have to the specified $\alpha$ values. Also, power should be *lower* for a lower $\alpha$ value.
+
+```{r}
+mean(p_vals < 0.1)
+mean(p_vals < 0.05)
+mean(p_vals < 0.01)
+```
