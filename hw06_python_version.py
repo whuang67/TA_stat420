@@ -149,13 +149,12 @@ fitted_vs_resid(model_3b5, X_3b5, y_3)
 _, X_3b7 = dmatrices(
         "life ~ tv+I(tv**2)+I(tv**3)+I(tv**4)+I(tv**5)+I(tv**6)+I(tv**7)",
         tvdoctor, return_type= "dataframe")
-model_3b7 = LinearRegression(fit_intercept=False).fit(X_3b7, y_3)
+model_3b7 = LinearRegression(normalize=True).fit(X_3b7, y_3)
 fitted_vs_resid(model_3b7, X_3b7, y_3)
-model_3b7.coef_
 
-ANOVA(model_3b3, model_3b5, X_3b3, X_3b5, y_3)
-ANOVA(model_3b3, model_3b7, X_3b3, X_3b7, y_3)
-ANOVA(model_3b5, model_3b7, X_3b5, X_3b7, y_3)
+print ANOVA(model_3b3, model_3b5, X_3b3, X_3b5, y_3)
+print ANOVA(model_3b3, model_3b7, X_3b3, X_3b7, y_3)
+print ANOVA(model_3b5, model_3b7, X_3b5, X_3b7, y_3)
 Normal_QQ(model_3b5, X_3b5, y_3)
 
 
