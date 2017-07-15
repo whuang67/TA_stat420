@@ -13,6 +13,7 @@ from patsy import dmatrices
 import matplotlib.pyplot as plt
 import scipy.stats as ss
 
+
 def ANOVA(model_red, model_full, X_red, X_full, y):
     SSE_reduced = ((y-model_red.predict(X_red))**2).sum().values[0]
     SSE_full = ((y-model_full.predict(X_full))**2).sum().values[0]
@@ -90,9 +91,33 @@ H = np.dot(np.dot(X_2a,
                   np.linalg.inv(np.dot(np.transpose(X_2a),
                                        X_2a))),
                   np.transpose(X_2a))
-Leverage = np.diag(H)
+Leverage = np.diag(H).tolist()
 
 ## (e)
+resid_2 = (y_2-model_2a.predict(X_2a)).Fertility.tolist()
+s2_p = sum(np.array(resid_2)**2)/(X_2a.shape[0]-X_2a.shape[1])*X_2a.shape[1]
+Cooks_Distance = []
+for e, h in zip(resid_2, Leverage):
+    d = e**2/s2_p*(h/(1-h)**2)
+    Cooks_Distance.append(d)
+# Cooks_Distance
+print np.where(np.array(Cooks_Distance) > 4.0/X_2a.shape[0])
+
+## (f)
+swiss_small = swiss.drop(swiss.index[[5, 36, 41, 45, 46]])
+y_2f, X_2f = dmatrices(
+        "Fertility ~ Agriculture + Examination + Education + Catholic + Infant_Mortality",
+        swiss_small, return_type="dataframe")
+model_2f = LinearRegression(fit_intercept=False).fit(X_2f, y_2f)
+print model_2f.coef_
+
+## (g)
+influ = swiss.iloc[[5, 36, 41, 45, 46], :]
+_, Pred = dmatrices(
+        "Fertility ~ Agriculture + Examination + Education + Catholic + Infant_Mortality",
+        influ, return_type="dataframe")
+print model_2a.predict(Pred)
+print model_2f.predict(Pred)
 
 
 
@@ -109,19 +134,19 @@ fitted_vs_resid(model_3a, X_3a, y_3)
 Normal_QQ(model_3a, X_3a, y_3)
 
 ## (b)
-y_3, X_3b3 = dmatrices("life ~ tv+I(tv**2)+I(tv**3)",
+_, X_3b3 = dmatrices("life ~ tv+I(tv**2)+I(tv**3)",
                        tvdoctor,
                        return_type="dataframe")
 model_3b3 = LinearRegression(fit_intercept=False).fit(X_3b3, y_3)
 fitted_vs_resid(model_3b3, X_3b3, y_3)
 
-y_3, X_3b5 = dmatrices(
+_, X_3b5 = dmatrices(
         "life ~ tv+I(tv**2)+I(tv**3)+I(tv**4)+I(tv**5)",
         tvdoctor, return_type= "dataframe")
 model_3b5 = LinearRegression(fit_intercept=False).fit(X_3b5, y_3)
 fitted_vs_resid(model_3b5, X_3b5, y_3)
 
-y_3, X_3b7 = dmatrices(
+_, X_3b7 = dmatrices(
         "life ~ tv+I(tv**2)+I(tv**3)+I(tv**4)+I(tv**5)+I(tv**6)+I(tv**7)",
         tvdoctor, return_type= "dataframe")
 model_3b7 = LinearRegression(fit_intercept=False).fit(X_3b7, y_3)
@@ -157,7 +182,7 @@ fitted_vs_resid(model_4d, X_4d, y_4)
 Normal_QQ(model_4d, X_4d, y_4)
 
 ## (e)
-y_4, X_4e = dmatrices("brain ~ np.log(body)", mammals, return_type="dataframe")
+_, X_4e = dmatrices("brain ~ np.log(body)", mammals, return_type="dataframe")
 model_4e = LinearRegression(fit_intercept=False).fit(X_4e, y_4)
 
 ## (f)
@@ -192,13 +217,13 @@ model_5b = LinearRegression(fit_intercept=False).fit(X_5b, y_5b)
 fitted_vs_resid(model_5b, X_5b, y_5b)
 
 ## (c)
-y_5c, X_5c = dmatrices("np.log(CO2) ~ horse*type + I(horse**2)",
+_, X_5c = dmatrices("np.log(CO2) ~ horse*type + I(horse**2)",
                        epa2015, return_type="dataframe")
-model_5c = LinearRegression(fit_intercept=False).fit(X_5c, y_5c)
-fitted_vs_resid(model_5c, X_5c, y_5c)
+model_5c = LinearRegression(fit_intercept=False).fit(X_5c, y_5b)
+fitted_vs_resid(model_5c, X_5c, y_5b)
 
 ## (d)
-Normal_QQ(model_5c, X_5c, y_5c)
+Normal_QQ(model_5c, X_5c, y_5b)
 
 
 
@@ -220,7 +245,7 @@ for i in range(1000):
                        "x_1": x_1,
                        "x_2": x_2})
     y_61, X_6 = dmatrices("y_1 ~ x_1+x_2", df, return_type="dataframe")
-    y_62, X_6 = dmatrices("y_2 ~ x_1+x_2", df, return_type="dataframe")
+    y_62, _ = dmatrices("y_2 ~ x_1+x_2", df, return_type="dataframe")
     model_61 = LinearRegression(fit_intercept=False).fit(X_6, y_61)
     model_62 = LinearRegression(fit_intercept=False).fit(X_6, y_62)
     resid_1 = y_61 - model_61.predict(X_6)
@@ -250,7 +275,7 @@ for i in range(1000):
                        "x": x,
                        "x_2": np.power(x, 2)})
     y_1, X_1 = dmatrices("y~x", df, return_type="dataframe")
-    y_1, X_2 = dmatrices("y~x+x_2", df, return_type="dataframe")
+    _, X_2 = dmatrices("y~x+x_2", df, return_type="dataframe")
     model_1 = LinearRegression(fit_intercept=False).fit(X_1, y_1)
     model_2 = LinearRegression(fit_intercept=False).fit(X_2, y_1)
     
