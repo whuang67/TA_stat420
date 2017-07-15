@@ -374,7 +374,26 @@ Repeat the above process of generating `y_1` and `y_2` as defined above, and fit
 
 using both model, in the appropriate variables defined above. (You do not need to use a data frame as we have in the past.)
 
+```{r}
+for(i in 1:num_sims) {
+  y_1        = 2 + x_1 + 0 * x_2 + rnorm(n)
+  fit_1      = lm(y_1 ~ x_1 + x_2)
+  p_val_1[i] = summary(fit_1)$coef[3,4]
+  
+  y_2        = 2 + x_1 + 0 * x_2 + rnorm(n, 0, abs(x_2))
+  fit_2      = lm(y_2 ~ x_1 + x_2)
+  p_val_2[i] = summary(fit_2)$coef[3,4]
+}
+```
+
 **(b)** What proportion of the `p_val_1` values are less than 0.05? Less than 0.10? What proportion of the `p_val_2` values are less than 0.05? Less than 0.10? Briefly explain these results.
+
+```{r}
+mean(p_val_1 < 0.05)
+mean(p_val_1 < 0.1)
+mean(p_val_2 < 0.05)
+mean(p_val_2 < 0.1)
+```
 
 ## Exercise 7 (Bigger Is Better?)
 
