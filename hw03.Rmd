@@ -1,6 +1,6 @@
 ---
 title: 'STAT 420: Homework 3'
-author: "D. Unger, Summer 2017"
+author: "Wenke Huang, Summer 2017"
 date: 'Due: Monday, July 3 by 11:50 PM CDT'
 output:
   html_document:
