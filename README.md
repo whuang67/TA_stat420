@@ -7,7 +7,7 @@ The `.Rmd` files may not be exactly same as the codes which are provided by inst
 ## Programming Language
 The basic language of this assignment is `R` (language of the course) and `Python` (extracurricular coding).
 
-From HW01 to HW06, the programming language is `Python 2.7`. The language of HW07 and HW08 is `Python 3.6`. This is a transfer from Python 2 to Python 3 because of the new version getting more and more popular and famous.
+From HW01 to HW06, the programming language is `Python 2.7`. The language of HW07 and HW08 is `Python 3.6`. This is a transfer from `Python 2.7` to `Python 3.6` because of the new version getting more and more popular and famous.
 
 ## Timeline
 The newest `.Rmd` file will be uploaded after the corresponding assignment is due. The newest `.py` file will be uploaded immediately after being finished.
