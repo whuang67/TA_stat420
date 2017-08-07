@@ -77,7 +77,8 @@ class Linear_Regression():
             print("SSR: {:.2f} | DF_R: {:d} | MSR: {:.2f} | F: {:.2f}\nSSE: {:.2f} | DF_E: {:d} | MSE: {:.2f}".format(SSR,
                  self.X.shape[1]-1,MSR, self.F_stat, MSE*(self.X.shape[0]-self.X.shape[1]), self.X.shape[0]-self.X.shape[1],
                  MSE))
-            print("F_statistic: {:.2f} on {:d} and {:d} DF\np_value: {:.4f}".format(self.F_stat, self.X.shape[1]-1, self.X.shape[0]-self.X.shape[1], self.F_p))
+            print("F_statistic: {:.2f} on {:d} and {:d} DF\np_value: {:.4f}".format(self.F_stat,
+                      self.X.shape[1]-1, self.X.shape[0]-self.X.shape[1], self.F_p))
         
         ## Outlier test starts here!!! ############################
         if outlier == True:
