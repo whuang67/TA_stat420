@@ -6,9 +6,9 @@ The `.Rmd` files may not be exactly same as the codes which are provided by inst
 
 ### function.py
 
-Compared with R, Python 'sklearn' will only be able to provide very few measures. Hence, Mr. Wenke Huang created this file which will help fit `Linear Regression` model with useful outputs that are similar with R's by himself.
+Compared with R, Python like `sklearn` will only be able to provide very few measures. Hence, Mr. Wenke Huang created this file which will help fit `Linear Regression` model with useful outputs that are similar with R's by himself.
 
-When we try to perform this model packages, only models that are created by using Linear_Regression() from this model work. Currently, it still does not support "sklearn.linear_model.LinearRegression". Possible improvement and `Logistic Regression` are on their way!
+When we try to perform this model packages, only models that are created by using Linear_Regression() from this model work. Currently, it does not support models from `sklearn.linear_model.LinearRegression`. Possible improvements and `Logistic Regression` are on their way!
 
 ## Programming Language
 The basic language of this assignment is `R` (language of the course) and `Python` (extracurricular coding).
