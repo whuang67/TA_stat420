@@ -8,6 +8,7 @@ Created on Sat Aug  5 23:46:30 2017
 import pandas as pd
 import numpy as np
 import os
+import math
 # from sklearn.linear_model import LinearRegression
 from patsy import dmatrices
 import scipy.stats as ss
@@ -18,37 +19,38 @@ import matplotlib.pyplot as plt
 
 def Transformer(predictors, method = "z_score"):
     newdata = predictors.copy()
-    for column in newdata.columns:
-        ## Standard Scaler ## mean == 0, std == 1
-        if method == "z_score":
+    ## Standard Scaler ## mean == 0, std == 1
+    if method == "z_score":
+        for column in newdata.columns:
             mean = newdata[column].mean()
             std = newdata[column].std()
             if std != 0:
                 loc = mean
                 scale = std
                 newdata[column] = (newdata[column] - loc)/scale
-        ## Min_Max Scaler ## range(0, 1)
-        elif method == "min_max":
+    ## Min_Max Scaler ## range(0, 1)
+    elif method == "min_max":
+        for column in newdata.columns:
             min_ = newdata[column].min()
             max_ = newdata[column].max()
             if max_ != min_:
                 newdata[column] = (newdata[column] - min_)/(max_ - min_)
             else:
                 newdata[column] = newdata[column]/max_
-        ## Abs_Max Scaler ## range(-1, 1)
-        elif method == "max_abs":
+    ## Abs_Max Scaler ## range(-1, 1)
+    elif method == "max_abs":
+        for column in newdata.columns:
             max_ = newdata[column].abs().max()
             newdata[column] = newdata[column]/max_
-        ## Not recognized ## Original dataset is returned
-        else:
-            newdata = newdata
+    ## Others ## Original dataset is returned
     return newdata
 
 
 class Linear_Regression():
-    def __init__(self, X, y, summary = False):
-        self.X = X*1
-        self.y = y*1
+    def __init__(self, formula, data, summary = False):
+        self.formula = formula
+        self.data = data*1
+        self.y, self.X = dmatrices(formula, self.data, return_type = "dataframe")
         beta_s = np.matmul(
                 np.matmul(
                     np.linalg.inv(
@@ -59,7 +61,7 @@ class Linear_Regression():
                 key: val[0] for key, val in zip(self.X.columns.tolist(),
                                              beta_s)}
         self.fitted = np.matmul(self.X, beta_s)
-        self.resid = y - self.fitted
+        self.resid = self.y - self.fitted
 
 class summary():
     def __init__(self, model):
@@ -166,6 +168,137 @@ def approximately_equal(first, second, tolerance = 10**-10):
         output = False
     return output
 
+def get_criteria(model, use = "AIC"):
+    RSS = (model.resid**2).sum()[0]
+    n = model.X.shape[0]
+    p = model.X.shape[1]
+    if use == "AIC":
+        criteria = n*math.log(RSS/n) + 2*p
+    elif use == "BIC":
+        criteria = n*math.log(RSS/n) + math.log(n)*p
+    return criteria
+
+def feature_selection(model, method = "backward"):
+    full_track = model.X.columns.tolist()
+    full_track.remove("Intercept")
+    left_vars = full_track*1
+    init_formula = model.y.columns[0]+"~1"
+    
+    def backward_elimination(model):
+        columns = model.X.columns.tolist()
+        columns.remove("Intercept")
+        criteria_dict = {'full': get_criteria(model)}
+        print("Beginning Model: {}".format(criteria_dict['full']))
+        for var in columns:
+            formula = model.y.columns[0]+"~1"
+            for var2 in columns:
+                if var2 != var:
+                   formula = formula + "+" + var2
+
+            model_ = Linear_Regression(formula, model.data)
+            criteria_dict[var] = get_criteria(model_)
+            print("- {}: {}".format(var, criteria_dict[var]))
+        mini, mini_key = criteria_dict["full"], 'full'
+        for var in columns:
+            if criteria_dict[var] < mini:
+                mini = criteria_dict[var]
+                mini_key = var
+        if mini_key != 'full':
+            formula_ = model.y.columns[0]+"~1"
+            kept_vars = [v for v in columns if v != mini_key]
+            left_vars.remove(mini_key)
+            print("We choose to remove: {}\n".format(mini_key))
+            for var in kept_vars:
+                formula_ = formula_ + "+"+var
+            model_2 = Linear_Regression(formula_, model.data)
+            return backward_elimination(model_2)
+        else:
+            print("Finished!!! Variables {} were selected.".format(left_vars))
+    
+    def stepwise_regression(model):
+        columns = model.X.columns.tolist()
+        columns.remove("Intercept")
+        criteria_dict = {'full': get_criteria(model)}
+        print("Beginning Model: {}".format(criteria_dict['full']))
+        diff_set = [v for v in full_track if v not in columns]
+        for var in columns:
+            formula = model.y.columns[0]+"~1"
+            for var2 in columns:
+                if var2 != var:
+                   formula = formula + "+" + var2
+            model_ = Linear_Regression(formula, model.data)
+            criteria_dict[var] = get_criteria(model_)
+            print("- {}: {}".format(var, criteria_dict[var]))
+        for var in diff_set:
+            formula = model.formula+ "+"+var
+            model_ = Linear_Regression(formula, model.data)
+            criteria_dict[var] = get_criteria(model_)
+            print("+ {}: {}".format(var, criteria_dict[var]))
+        mini, mini_key = criteria_dict["full"], 'full'
+        for key, val in criteria_dict.items():
+            if val < mini:
+                mini = val
+                mini_key = key
+        
+        if mini_key in columns:
+            formula_ = model.y.columns[0]+"~1"
+            kept_vars = [v for v in columns if v != mini_key]
+            left_vars.remove(mini_key)
+            print("We choose to remove: {}\n".format(mini_key))
+            for var in kept_vars:
+                formula_ = formula_ + "+"+var
+            model_2 = Linear_Regression(formula_, model.data)
+            return stepwise_regression(model_2)
+        elif mini_key in diff_set:
+            formula_ = model.formula + "+" + mini_key
+            print("We choose to add: {}\n".format(mini_key))
+            left_vars.append(mini_key)
+            model_2 = Linear_Regression(formula_, model.data)
+            return stepwise_regression(model_2)
+        else:
+            print("Finished!!! Variables {} were selected.".format(left_vars))
+            
+    def forward_selection(model, init_):
+        model_for = Linear_Regression(init_, model.data)
+        criteria_dict = {'full': get_criteria(model_for)}
+        columns = model_for.X.columns.tolist()
+        columns.remove("Intercept")
+        print("Beginning Model: {}".format(criteria_dict['full']))
+        diff_set = [v for v in full_track if v not in columns]
+        for var in diff_set:
+            formula = model_for.formula+ "+"+var
+            model_ = Linear_Regression(formula, model.data)
+            criteria_dict[var] = get_criteria(model_)
+            print("+ {}: {}".format(var, criteria_dict[var]))
+        mini, mini_key = criteria_dict["full"], 'full'
+        for key, val in criteria_dict.items():
+            if val < mini:
+                mini = val
+                mini_key = key
+        
+        if mini_key in diff_set:
+            init_formula = model_for.formula + "+" + mini_key
+            print("We choose to add: {}\n".format(mini_key))
+            left_vars.append(mini_key)
+            model_2 = Linear_Regression(init_formula, model.data)
+            return forward_selection(model_2, init_ = init_formula)
+        else:
+            print("Finished!!! Variables {} were selected.".format(left_vars))
+        
+        
+            ###########################
+            ###########################
+    if method == "backward":
+        return backward_elimination(model)
+    elif method == "stepwise":
+        return stepwise_regression(model)
+    elif method == "forward":
+        return forward_selection(model, init_ = init_formula)
+        
+
+
+
+
 """
 Example!!!
 """
@@ -176,7 +309,8 @@ response, predictors = dmatrices("GNP_deflator~ GNP + Unemployed + Year",
                                  longley, return_type = "dataframe")
 
 ## Model Fitting
-model_1 = Linear_Regression(predictors, response)
+model_1 = Linear_Regression("GNP_deflator ~ GNP+Unemployed+Year+Population", longley)
+summary(model_1)
 ## Summarized Information of model
 print(summary(model_1))
 ## Outlier Detection of model
@@ -190,7 +324,8 @@ plt.show()
 ## Variance Inflation Factor
 print(get_VIF(model_1))
 ## Analysis of Variacne
-_, predictors2 = dmatrices("GNP_deflator~ GNP + Unemployed",
-                           longley, return_type = "dataframe")
-model_2 = Linear_Regression(predictors2, response)
+model_2 = Linear_Regression("GNP_deflator~ GNP + Unemployed", longley)
 print(get_ANOVA(model_2, model_1))
+
+## Feature Selection
+print(feature_selection(model_1, method ="backward"))
