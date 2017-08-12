@@ -1,0 +1,480 @@
+---
+title: 'STAT 420: Homework 8'
+author: "Wenke Huang, Summer 2017"
+date: 'Due: Friday, August 4 by 11:50 PM CDT'
+output:
+  html_document:
+    theme: readable
+    toc: yes
+---
+
+# Solution
+
+## Exercise 1 (Simulating MLR without `lm`)
+
+Consider the following predictor variable data.
+
+```{r}
+set.seed(420)
+sample_size = 50
+x1 = runif(n = sample_size, min = -1, max = 1)
+x2 = runif(n = sample_size, min = -1, max = 1)
+```
+
+Also consider the true model
+
+\[
+Y = \beta_0 + \beta_1 x_1  + \beta_2 x_2  + \beta_3 x_1^2  + \beta_4 x_2^2  + \beta_5 x_1 x_2 + \epsilon,
+\]
+
+where $\epsilon \sim N(\mu = 0, \sigma^2 = 4)$ and
+
+- $\beta_0 = 6$,
+- $\beta_1 = 5$,
+- $\beta_2 = 4$,
+- $\beta_3 = 3$,
+- $\beta_4 = 2$,
+- $\beta_5 = 1$.
+
+**(a)** Set a seed equal to your UIN. Simulate the response variable $y$ from the true model 1000 times. (Samples of size 50.) For each simulation, obtain the least squares estimates of the model coefficients and store them. In order to obtain these estimates, you **may *NOT* use the `lm()` function** or any other function that performs the same operation automatically. You are only allowed to use basic arithmetic and matrix operations.
+
+Plot a histogram of the estimates for each $\beta_j$. Your final answer will be **six** histograms.
+
+**Hint:** Look back to Homework One for some inspiration.
+
+**Solution:**
+
+```{r, solution = TRUE}
+beta_0 = 6
+beta_1 = 5
+beta_2 = 4
+beta_3 = 3
+beta_4 = 2
+beta_5 = 1
+sigma  = 2
+```
+
+```{r, solution = TRUE}
+x0 = rep(1, sample_size)
+x3 = x1 ^ 2
+x4 = x2 ^ 2
+x5 = x1 * x2
+```
+
+```{r, solution = TRUE}
+X = cbind(x0, x1, x2, x3, x4, x5)
+```
+
+```{r, solution = TRUE}
+get_beta_hat = function(y, X) {
+  t(solve(t(X) %*% X) %*% t(X) %*% y)
+}
+```
+
+```{r, solution = TRUE}
+set.seed(123456789)
+num_samples = 1000
+betas = matrix(0, nrow = num_samples, ncol = 6)
+for(s in 1:num_samples) {
+  y = beta_0 + beta_1 * x1 + beta_2 * x2 + beta_3 * x1 ^ 2 + beta_4 * x2 ^ 2 + beta_5 * x1 * x2 + rnorm(n = sample_size, mean = 0, sd = sigma)
+  betas[s, ] = get_beta_hat(y, X)
+}
+```
+
+```{r, solution = TRUE}
+par(mfrow = c(2, 3))
+hist(betas[,1], col = "darkorange", border = "dodgerblue", 
+     xlab = expression(hat(beta)[0]), 
+     main = expression("Histogram of " *hat(beta)[0]* ""))
+hist(betas[,2], col = "darkorange", border = "dodgerblue", 
+     xlab = expression(hat(beta)[1]), 
+     main = expression("Histogram of " *hat(beta)[1]* ""))
+hist(betas[,3], col = "darkorange", border = "dodgerblue", 
+     xlab = expression(hat(beta)[2]), 
+     main = expression("Histogram of " *hat(beta)[2]* ""))
+hist(betas[,4], col = "darkorange", border = "dodgerblue", 
+     xlab = expression(hat(beta)[3]), 
+     main = expression("Histogram of " *hat(beta)[3]* ""))
+hist(betas[,5], col = "darkorange", border = "dodgerblue", 
+     xlab = expression(hat(beta)[4]), 
+     main = expression("Histogram of " *hat(beta)[4]* ""))
+hist(betas[,6], col = "darkorange", border = "dodgerblue", 
+     xlab = expression(hat(beta)[5]), 
+     main = expression("Histogram of " *hat(beta)[5]* ""))
+```
+
+
+
+## Exercise 2 (Adjusting Signal and Noise)
+
+Consider the following predictor variable data.
+
+```{r}
+set.seed(421)
+sample_size = 30
+x1 = runif(n = sample_size, min = 0, max = 1)
+x2 = runif(n = sample_size, min = 0, max = 1)
+```
+
+Also consider the true model
+
+\[
+Y = \beta_0 + \beta_1 x_1  + \beta_2 x_2  + \epsilon,
+\]
+
+where $\epsilon \sim N(\mu = 0, \sigma^2 = 1)$ and
+
+- $\beta_0 = 1$,
+- $\beta_1 = 1$,
+- $\beta_2 = 1$.
+
+```{r}
+beta_0 = 1 
+beta_1 = 1
+beta_2 = 1
+sigma  = 1
+```
+
+The following code simulates $y$ from this model, fits an additive model, and views the summary information.
+
+```{r}
+set.seed(421)
+y = beta_0 + beta_1 * x1 + beta_2 * x2 + rnorm(n = sample_size, mean = 0, sd = sigma)
+summary(lm(y ~ x1 + x2))
+```
+
+**(a)** Using the already simulated values of the predictor variables, starting from the original true model, modify **only** the true value of $\sigma$, use `set.seed(421)` and re-simulate $y$ then fit an additive model to the data. By making this modification, your fitted model should now obtain a value of $R^2$ greater than **0.50**.
+
+**Solution:**
+
+```{r, solution = TRUE}
+beta_0 = 1 
+beta_1 = 1
+beta_2 = 1
+sigma  = 0.01
+
+set.seed(421)
+y = beta_0 + beta_1 * x1 + beta_2 * x2 + rnorm(n = sample_size, mean = 0, sd = sigma)
+summary(lm(y ~ x1 + x2))$r.sq
+```
+
+**(b)** Using the already simulated values of the predictor variables, starting from the original true model, modify **only** the true value of $\beta_1$, use `set.seed(421)` and re-simulate $y$ then fit an additive model to the data. By making this modification, your fitted model should now obtain a value of $R^2$ less than **0.10**.
+
+**Solution:**
+
+```{r, solution = TRUE}
+beta_0 = 1 
+beta_1 = 0
+beta_2 = 1
+sigma  = 1
+
+set.seed(421)
+y = beta_0 + beta_1 * x1 + beta_2 * x2 + rnorm(n = sample_size, mean = 0, sd = sigma)
+summary(lm(y ~ x1 + x2))$r.sq
+```
+
+**(c)** Using the already simulated values of the predictor variables, starting from the original true model, modify **only** the true value of $\sigma$, use `set.seed(421)` and re-simulate $y$ then fit an additive model to the data. By making this modification, your fitted model should now be significant at $\alpha = 0.01$.
+
+**Solution:**
+
+```{r, solution = TRUE}
+beta_0 = 1 
+beta_1 = 1
+beta_2 = 1
+sigma  = 0.01
+
+set.seed(421)
+y = beta_0 + beta_1 * x1 + beta_2 * x2 + rnorm(n = sample_size, mean = 0, sd = sigma)
+summary(lm(y ~ x1 + x2))
+```
+
+**(d)** Using the already simulated values of the predictor variables, starting from the original true model, modify **only** the true value of $\beta_2$, use `set.seed(421)` and re-simulate $y$ then fit an additive model to the data. By making this modification, your fitted model should now be significant at $\alpha = 0.01$.
+
+**Solution:**
+
+```{r, solution = TRUE}
+beta_0 = 1 
+beta_1 = 1
+beta_2 = 50
+sigma  = 1
+
+set.seed(421)
+y = beta_0 + beta_1 * x1 + beta_2 * x2 + rnorm(n = sample_size, mean = 0, sd = sigma)
+summary(lm(y ~ x1 + x2))
+```
+
+**(e)** Using the already simulated values of the predictor variables, starting from the original true model, modify **only** the true value of $\sigma$, use `set.seed(421)` and re-simulate $y$ then fit an additive model to the data. By making this modification, $\beta_1$ should not be significant at $\alpha = 0.10$.
+
+**Solution:**
+
+```{r, solution = TRUE}
+beta_0 = 1 
+beta_1 = 1
+beta_2 = 1
+sigma  = 10
+
+set.seed(421)
+y = beta_0 + beta_1 * x1 + beta_2 * x2 + rnorm(n = sample_size, mean = 0, sd = sigma)
+summary(lm(y ~ x1 + x2))
+```
+
+## Exercise 3 (Two-Way ANOVA)
+
+An engineer is investigating the strength of concrete beams made from four types of cement and employing three curing processes. For each curing processes and cement type combination, three beams are created and their breaking strength is measured. This is an example of a $3 \times 4$ factorial design with $3$ replicates. The data obtained by the engineer can be found in [`two_way_data.csv`](two_way_data.csv).
+
+We are interested in the mean strength of each combination, which we write in the following table.
+
+|              | Cement A   | Cement B   | Cement C   | Cement D   |
+|--------------|------------|------------|------------|------------|
+| **Curing A** | $\mu_{AA}$ | $\mu_{AB}$ | $\mu_{AC}$ | $\mu_{AD}$ |
+| **Curing B** | $\mu_{BA}$ | $\mu_{BB}$ | $\mu_{BC}$ | $\mu_{BD}$ |
+| **Curing C** | $\mu_{CA}$ | $\mu_{CB}$ | $\mu_{CC}$ | $\mu_{CD}$ |
+
+We create the data frame `for_predicting` which contains a row for each curing-cement combination. This will be useful for obtaining estimated means for each curing-cement combination.
+
+```{r}
+curing = c("A", "B", "C")
+cement = c("A", "B", "C", "D")
+for_predicting = expand.grid(cement, curing)
+colnames(for_predicting) = c("cement", "curing")
+for_predicting = as.data.frame(for_predicting)
+```
+
+Install and load the `matrixStats` package. We will use the functions `rowDiffs()` and `colDiffs()` to look at the row and column differences of matrices will be making throughout this exercise.
+
+```{r}
+library(matrixStats)
+```
+
+Lastly, be aware of the `unique()` function, which returns the number of unique values of a vector.
+
+**(a)** Fit a model with `strength` as the response using only an intercept, thus neither predictor. Obtain an estimate of the mean for each of the curing-cement combinations using this model and store them in a matrix which matches the table above. How many different mean estimates are there? Output this matrix as well as the row differences and column differences.
+
+**Solution:**
+
+```{r, solution = TRUE}
+two_way_data = read.csv("two_way_data.csv")
+one_mean = lm(strength ~ 1, data = two_way_data)
+length(unique(predict(one_mean)))
+(one_mean_cell_ests = matrix(predict(one_mean, for_predicting), 
+                            nrow = 3, ncol = 4, byrow = TRUE))
+rowDiffs(one_mean_cell_ests)
+colDiffs(one_mean_cell_ests)
+mean(two_way_data$strength)
+```
+
+Here we see each estimate is the same, as we are using neither of the predictors. Notice that single mean is simply the mean of `strength`.
+
+**(b)** Fit a model with `strength` as the response and `cement` as the only predictor. Obtain an estimate of the mean for each of the curing-cement combinations using this model and store them in a matrix which matches the table above. How many different mean estimates are there? Output this matrix as well as the row differences and column differences.
+
+**Solution:**
+
+```{r, solution = TRUE}
+cement_means = lm(strength ~ cement, data = two_way_data)
+length(unique(predict(cement_means)))
+(cement_means_cell_ests = matrix(predict(cement_means, for_predicting), 
+                            nrow = 3, ncol = 4, byrow = TRUE))
+rowDiffs(cement_means_cell_ests)
+colDiffs(cement_means_cell_ests)
+```
+
+Here we see four different means, one for each cement type.
+
+**(c)** Fit a model with `strength` as the response and `curing` as the only predictor. Obtain an estimate of the mean for each of the curing-cement combinations using this model and store them in a matrix which matches the table above. How many different mean estimates are there? Output this matrix as well as the row differences and column differences.
+
+**Solution:**
+
+```{r, solution = TRUE}
+curing_means = lm(strength ~ curing, data = two_way_data)
+length(unique(predict(curing_means)))
+(curing_means_cell_ests = matrix(predict(curing_means, for_predicting), 
+                            nrow = 3, ncol = 4, byrow = TRUE))
+rowDiffs(curing_means_cell_ests)
+colDiffs(curing_means_cell_ests)
+```
+
+Here we see three unique means, one for each curing process.
+
+**(d)** Fit an additive model with `strength` as the response which uses both of the predictors. Obtain an estimate of the mean for each of the curing-cement combinations using this model and store them in a matrix which matches the table above. How many different mean estimates are there? Output this matrix as well as the row differences and column differences.
+
+**Solution:**
+
+```{r, solution = TRUE}
+additive = lm(strength ~ cement + curing, data = two_way_data)
+length(unique(predict(additive)))
+(additive_cell_ests = matrix(predict(additive, for_predicting), 
+                            nrow = 3, ncol = 4, byrow = TRUE))
+rowDiffs(additive_cell_ests)
+colDiffs(additive_cell_ests)
+```
+
+Here we see twelve unique means, one for each cement-curing combination. However, we notice there is still a pattern between the rows and columns.
+
+**(e)** Fit an interaction model with `strength` as the response which uses both of the predictors. Obtain an estimate of the mean for each of the curing-cement combinations using this model and store them in a matrix which matches the table above. How many different mean estimates are there? Output this matrix as well as the row differences and column differences.
+
+**Solution:**
+
+```{r, solution = TRUE}
+interaction = lm(strength ~ cement * curing, data = two_way_data)
+length(unique(predict(interaction)))
+(interaction_cell_ests = matrix(predict(interaction, for_predicting), 
+                            nrow = 3, ncol = 4, byrow = TRUE))
+rowDiffs(interaction_cell_ests)
+colDiffs(interaction_cell_ests)
+```
+
+Here we see twelve unique means, one for each cement-curing combination. Now, there are no restrictions on the rows and columns.
+
+**(f)** Perform a statistical test to compare the additive and interaction models. Based on this test, which do you prefer?
+
+**Solution:**
+
+```{r, solution = TRUE}
+anova(additive, interaction)
+```
+
+Based on the ANOVA $F$ test, we do not need the interaction model. The additive model is sufficient.
+
+## Exercise 4 (Body Dimensions)
+
+For this exercise we will use the data stored in [`body.csv`](body.csv). It contains 21 body dimension measurements as well as age, weight, height, and gender on 507 individuals. The participants were primarily individuals in their twenties and thirties, with a few older men and women, all of whom proclaimed to exercise several hours a week. The variables in the dataset are:
+
+Skeletal Measurements (all measured in cm):
+
+- `s1` - Biacromial diameter
+- `s2` - Biiliac diameter, or "pelvic breadth"
+- `s3` - Bitrochanteric diameter
+- `s4` - Chest depth between spine and sternum at nipple level, mid-expiration
+- `s5` - Chest diameter at nipple level, mid-expiration
+- `s6` - Elbow diameter, sum of two elbows
+- `s7` - Wrist diameter, sum of two wrists
+- `s8` - Knee diameter, sum of two knees
+- `s9` - Ankle diameter, sum of two ankles
+
+Girth Measurements (all measured in cm):
+
+- `g1` - Shoulder girth over deltoid muscles
+- `g2` - Chest girth, nipple line in males and just above breast tissue in females, mid-expiration
+- `g3` - Waist girth, narrowest part of torso below the rib cage, average of contracted and relaxed position
+- `g4` - Navel (or "Abdominal") girth at umbilicus and iliac crest, iliac crest as a landmark
+- `g5` - Hip girth at level of bitrochanteric diameter
+- `g6` - Thigh girth below gluteal fold, average of right and left girths
+- `g7` - Bicep girth, flexed, average of right and left girths
+- `g8` - Forearm girth, extended, palm up, average of right and left girths
+- `g9` - Knee girth over patella, slightly flexed position, average of right and left girths
+- `g10` - Calf maximum girth, average of right and left girths
+- `g11` - Ankle minimum girth, average of right and left girths
+- `g12` - Wrist minimum girth, average of right and left girths
+
+Other Measurements:
+
+- `Age` - in years
+- `Weight` - in kg
+- `Height` - in cm
+- `Gender` - 0 = female, 1 = male
+
+**(a)** Find a good model for `Weight` using only the Skeletal variables as well as `Age`, `Height`, and `Gender`. You are not allowed to remove any data or transform the response.
+
+**Solution:**
+
+```{r, solution = TRUE}
+body = read.csv("body.csv")
+additive_skeletal = lm(Weight ~ s1 + s2 + s3 + s4 + s5 + s6 + s7 + s8 + s9 + Age + Height + Gender, data = body)
+additive_skeletal_back_aic = step(additive_skeletal, direction = "backward", trace = 0)
+coef(additive_skeletal_back_aic)
+```
+
+Notice that this model does not use all of the Skeletal variables, and excludes Gender from the other measurements.
+
+**(b)** Find a good model for `Weight` using only the Girth variables as well as `Age`, `Height`, and `Gender`. You are not allowed to remove any data or transform the response.
+
+**Solution:**
+
+```{r, solution = TRUE}
+additive_girth = lm(Weight ~ g1 + g2 + g3 + g4 + g5 + g6 + g7 + g8 + g9 + g10 + g11 + g12 + Age + Height + Gender, data = body)
+additive_girth_back_aic = step(additive_girth, direction = "backward", trace = 0)
+coef(additive_girth_back_aic)
+```
+
+Notice that this model does not use all of the Girth variables, but does use all of the other measurements.
+
+**(c)** Based on **(a)** and **(b)**, which set of body measurements are more useful for predicting `Weight`.
+
+**Solution:**
+
+```{r, solution = TRUE}
+get_loocv_rmse = function(model) {
+  sqrt(mean((resid(model) / (1 - hatvalues(model))) ^ 2))
+}
+
+get_loocv_rmse(additive_skeletal_back_aic)
+get_loocv_rmse(additive_girth_back_aic)
+```
+
+Using LOOCV RMSE as a measure of how well they predict, we prefer the model which uses the girth variables.
+
+**(d)** Using all available variables, devise and justify a good model for predicting `Weight`. It should use less than 50 parameters and obtain a LOOCV RMSE less than 1.9. You are not allowed to remove any data or transform the response.
+
+**Solution:**
+
+```{r, solution = TRUE}
+get_num_params = function(model) {
+  length(coef(model))
+}
+```
+
+```{r, solution = TRUE}
+additive = lm(Weight ~ ., data = body)
+n = length(resid(additive))
+additive_back_aic = step(additive, direction = "backward", trace = 0)
+coef(additive_back_aic)
+```
+
+```{r, solution = TRUE}
+interaction = lm(Weight ~ (s2 + s4 + s5 + s6 + s8 + g1 + g2 + g3 + g5 + g6 + g8 + g9 + g10 + Age + Height + Gender) ^ 2, data = body)
+interaction_back_bic = step(interaction, direction = "backward", trace = 0, k = log(n))
+```
+
+```{r, solution = TRUE}
+get_loocv_rmse(interaction_back_bic)
+get_num_params(interaction_back_bic)
+```
+
+Here we search for a model in the following manner:
+
+- Fit an additive model using all possible predictors.
+- Use backwards search with AIC to find a subset of predictors.
+- Based on the model found using backwards search with AIC, add all possible two-way interactions to this model.
+- Use backwards search with BIC to find a subset of predictors from this model.
+
+We see that the resulting model meets the stated criteria. Note there are certainly other models and search techniques which could find a model that meets the criteria.
+
+## Exercise 5 (Ball Bearings)
+
+For this exercise we will use the data stored in [`ballbearings.csv`](ballbearings.csv). It contains 210 observations, each of which reports the results of a test on a set of ball bearings. Manufacturers who use bearings in their products have an interest in their reliability. The basic measure of reliability in this context is the rating life, also known in engineering as fatigue failure. The objective is to model `L50`, the median lifetime of this sample of ball bearings. The variables in the dataset are:
+
+- `L50` - median life: the number of revolutions that 50% of a group of identical bearings would be expected to achieve
+- `P` - the load on the bearing in operation
+- `Z` - the number of balls in the bearing
+- `D` - the diameter of the balls
+- `Company` - denotes who manufactured the ball bearing (A, B, C)
+- `Type` - Company B makes several types of ball bearings (1, 2, 3); 0 otherwise
+
+**(a)** Find a model for `L50` that does not reject both the Shapiro-Wilk and Breusch-Pagan test at $\alpha = 0.01$ and obtains an Adjusted $R^2$ higher than 0.50. You may not remove any data, but may consider transformations.
+
+**Solution:**
+
+```{r, solution = TRUE}
+ballbearings = read.csv("ballbearings.csv")
+ballbearings$Type = as.factor(ballbearings$Type) # important!!!
+str(ballbearings)
+
+good_fit = lm(log(L50) ~ log(P) + log(Z) + log(D) + Company + Type, data = ballbearings)
+
+library(lmtest)
+shapiro.test(resid(good_fit))
+bptest(good_fit)
+summary(good_fit)$r.sq
+```
+
+

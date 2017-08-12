@@ -1,0 +1,610 @@
+---
+title: 'STAT 420: Homework 7'
+author: "Wenke Huang, Summer 2017"
+date: 'Due: Monday, July 31 by 11:50 PM CDT'
+output:
+  html_document:
+    theme: readable
+    toc: yes
+---
+
+# Solution
+
+## Exercise 1 (`longley` Macroeconomic data)
+
+The data set `longley` from the `faraway` package contains macroeconomic data for predicting employment.
+
+```{r}
+library(faraway)
+```
+
+```{r, eval = FALSE}
+View(longley)
+?longley
+```
+
+**(a)** Find the correlation between each of the variables in the dataset.
+
+**Solution:**
+
+```{r, solution = TRUE}
+round(cor(longley), 2)
+pairs(longley)
+```
+
+**(b)** Fit a model with `Employed` as the response and the remaining variables as predictors. Calculate the variance inflation factor for each of the predictors. What is the largest VIF? Do any of the VIFs suggest multicollinearity?
+
+**Solution:**
+
+```{r, solution = TRUE}
+employ_mod = lm(Employed ~ ., data = longley)
+#summary(employ_mod)
+vif(employ_mod)
+vif(employ_mod)[which.max(vif(employ_mod))]
+```
+
+The VIFs for every predictor except for `Armed.Forces` are extremely large. `GNP` has the largest VIF.
+
+**(c)** What proportion of observed variation in `Population` is explained by a linear relationship with the other predictors?
+
+**Solution:**
+
+```{r, solution = TRUE}
+partfit1 = lm(Employed ~ . - Population, data = longley)
+partfit2 = lm(Population ~ . - Employed, data = longley)
+summary(partfit2)$r.squared
+```
+
+99.75% of the variation of `Population` is explained by a linear relationship with the other *predictors*.
+
+**(d)** Calculate the partial correlation coefficient for `Population` and `Employed` **with the effects of the other predictors removed**.
+
+**Solution:**
+
+```{r, solution = TRUE}
+cor(resid(partfit2), resid(partfit1))
+```
+
+**(e)** Fit a new model with `Employed` as the response and the predictors from the model in **(b)** which were significant. (Use $\alpha = 0.05$.) Calculate the variance inflation factor for each of the predictors. What is the largest VIF? Do any of the VIFs suggest multicollinearity?
+
+**Solution:**
+
+```{r, solution = TRUE}
+summary(employ_mod)
+employ_mod_small = lm(Employed ~ Year + Armed.Forces + Unemployed, data = longley)
+vif(employ_mod_small)
+vif(employ_mod_small)[which.max(vif(employ_mod_small))]
+```
+
+None of these VIFs appear to be a problem. `Year` is the largest. Note that we have fixed the multicollinearity, but that does not necessarily justify this model.
+
+**(f)** Use an $F$-test to compare the models in parts **(b)** and **(e)**. Report the following:
+
+- The null hypothesis.
+- The test statistic.
+- The distribution of the test statistic under the null hypothesis.
+- The p-value.
+- A decision.
+- Which model you prefer. **(b)** or **(e)**
+
+**Solution:**
+
+```{r, solution = TRUE}
+anova(employ_mod_small, employ_mod)
+```
+
+- Null: $\beta_{GNP.def} = \beta_{GNP} = \beta_{Pop} = 0.$
+- TS: $F = 1.75.$
+- Distribution: $F$ with degrees of freedom $3$ and $9$.
+- p-value: 0.23
+- Decision: Do NOT reject the null hypothesis.
+- Prefer: The smaller model based on the $F$ test.
+
+**(g)** Check the assumptions of the model chosen in part **(f)**. Do any assumptions appear to be violated?
+
+**Solution:**
+
+```{r, echo = FALSE}
+plot_fitted_resid = function(model, pointcol = "dodgerblue", linecol = "darkorange") {
+  plot(fitted(model), resid(model), 
+       col = pointcol, pch = 20, cex = 1.5,
+       xlab = "Fitted", ylab = "Residuals")
+  abline(h = 0, col = linecol, lwd = 2)
+}
+
+plot_qq = function(model, pointcol = "dodgerblue", linecol = "darkorange") {
+  qqnorm(resid(model), col = pointcol, pch = 20, cex = 1.5)
+  qqline(resid(model), col = linecol, lwd = 2)
+}
+```
+
+```{r, solution = TRUE}
+library(lmtest)
+bptest(employ_mod_small)
+shapiro.test(resid(employ_mod_small))
+par(mfrow = c(1, 2))
+plot_fitted_resid(employ_mod_small)
+plot_qq(employ_mod_small)
+```
+
+There do not appear to be any violation of assumptions.
+
+## Exercise 2 (`odor` Chemical Data)
+
+Use the `odor` data from the `faraway` package for this question.
+
+**(a)** Fit a complete second order model with `odor` as the response and the three other variables as predictors. That is use each first order term, their two-way interactions, and the quadratic term for each of the predictors. Perform the significance of the regression test. Use a level of $\alpha = 0.10$. Report the following:
+
+- The test statistic.
+- The distribution of the test statistic under the null hypothesis.
+- The p-value.
+- A decision.
+
+**Solution:**
+
+```{r, solution = TRUE}
+odor_mod_comp = lm(odor ~ . ^ 2 + I(temp ^ 2) + I(gas ^ 2) + I(pack ^ 2), data = odor)
+summary(odor_mod_comp)
+```
+
+- Test statistic: 4.152
+- Distribution: F with 9 and 5 degrees of freedom.
+- p-value: 0.06569
+- Decision: Reject $H_0$ at $\alpha = 0.10$.
+
+**(b)** Fit a model with the same response, but now excluding any interaction terms. So, include all linear and quadratic terms. Compare this model to the model in **(a)** using an appropriate test. Use a level of $\alpha = 0.10$. Report the following:
+
+- The test statistic.
+- The distribution of the test statistic under the null hypothesis.
+- The p-value.
+- A decision.
+
+**Solution:**
+
+```{r, solution = TRUE}
+odor_mod_quad = lm(odor ~ . + I(temp ^ 2) + I(gas ^ 2) + I(pack ^ 2), data = odor)
+summary(odor_mod_quad)
+anova(odor_mod_quad, odor_mod_comp)
+```
+
+- Test statistic: 0.1936
+- Distribution: 0.8965
+- p-value: F with 3 and 5 degrees of freedom.
+- Decision: Do NOT reject $H_0$ at $\alpha = 0.10$.
+
+**(c)** Report the proportion of the observed variation of `odor` explained by the two previous models.
+
+**Solution:**
+
+```{r, solution = TRUE}
+summary(odor_mod_quad)$r.squared
+summary(odor_mod_comp)$r.squared
+```
+
+
+
+**(d)** Use adjusted $R^2$ to pick from the two models. Report both values. Does this decision match the decision made in part **(b)**?
+
+**Solution:**
+
+```{r, solution = TRUE}
+summary(odor_mod_quad)$adj.r.squared
+summary(odor_mod_comp)$adj.r.squared
+```
+
+Based on Adjusted $R^2$ we prefer the smaller model (without interaction terms.) This matches our decision from part **(b)**.
+
+## Exercise 3 (`teengamb` Gambling Data)
+
+The `teengamb` dataset from the `faraway` package contains data related to teenage gambling in Britain.
+
+**(a)** Fit an additive model with `gamble` as the response and the other variables as predictors. Use backward AIC variable selection to determine a good model. When writing your final report, you may wish to use `trace = 0` inside of `step()` to minimize unneeded output. (This advice is also useful for future questions which use `step()`.)
+
+**Solution:**
+
+```{r, solution = TRUE}
+gamble_add = lm(gamble ~ sex + status + income + verbal, data = teengamb)
+gamble_add_back_aic = step(gamble_add, direction = "backward", trace = 0)
+coef(gamble_add_back_aic)
+```
+
+
+
+**(b)** Use backward BIC variable selection to determine a good model.
+
+**Solution:**
+
+```{r, solution = TRUE}
+n = length(resid(gamble_add))
+gamble_add_back_bic = step(gamble_add, direction = "backward", k = log(n), trace = 0)
+coef(gamble_add_back_bic)
+```
+
+
+
+**(c)** Use a statistical test to compare these two models. Use a level of $\alpha = 0.10$. Report the following:
+
+- The test statistic.
+- The distribution of the test statistic under the null hypothesis.
+- The p-value.
+- A decision.
+
+**Solution:**
+
+```{r, solution = TRUE}
+anova(gamble_add_back_bic, gamble_add_back_aic)
+```
+
+- Test statistic: 2.2646. (Or 1.5049.)
+- Distribution: F with 1 and 43 degrees of freedom. (Or t with 43.)
+- p-value: 0.1397
+- Decision: Do **not** reject $H_0$ at $\alpha = 0.10$. (Prefer the model chosen by BIC, which is smaller.)
+
+**(d)** Fit a model with `gamble` as the response and the other variables as predictors with *all* possible interactions, up to and including a four-way interaction. Use backward AIC variable selection to determine a good model. 
+
+**Solution:**
+
+```{r, solution = TRUE}
+gamble_int = lm(gamble ~ sex * status * income * verbal, data = teengamb)
+gamble_int_back_aic = step(gamble_int, direction = "backward", trace = 0)
+coef(gamble_int_back_aic)
+```
+
+
+
+**(e)** Compare the values of Adjusted $R^2$ for the each of the five previous models. Which model is the "best" model out of the five? Justify your answer.
+
+**Solution:**
+
+```{r, solution = TRUE}
+summary(gamble_add)$adj.r.squared
+summary(gamble_add_back_aic)$adj.r.squared
+summary(gamble_add_back_bic)$adj.r.squared
+summary(gamble_int)$adj.r.squared
+summary(gamble_int_back_aic)$adj.r.squared
+```
+
+The "best" model of the five is the interaction model chosen using AIC since it has the largest Adjusted $R^2$ by far.
+
+## Exercise 4 (`prostate` Data)
+
+Using the `prostate` dataset from the `faraway` package, fit a model with `lpsa` as the response and the other variables as predictors. For this exercise only consider first order predictors.
+
+**(a)** Find the model with the **best** AIC. Report the predictors that are used in the resulting model.
+
+**Solution:**
+
+```{r, solution = TRUE}
+library(leaps)
+lpsa_mod = lm(lpsa ~ . , data = prostate)
+lpsa_mod_subs = summary(regsubsets(lpsa ~ . , data = prostate))
+n = length(resid(lpsa_mod))
+p = length(coef(lpsa_mod))
+lpsa_mod_subs$which
+
+(lpsa_mod_AIC = n * log(lpsa_mod_subs$rss / n) + 2 * (2:p))
+lpsa_mod_subs$which[which.min(lpsa_mod_AIC), ]
+```
+
+**(b)** Find the model with the **best** BIC. Report the predictors that are used in the resulting model.
+
+**Solution:**
+
+```{r, solution = TRUE}
+lpsa_mod_subs$bic
+which.min(lpsa_mod_subs$bic)
+lpsa_mod_subs$which[which.min(lpsa_mod_subs$bic),]
+```
+
+**(c)** Find the model with the **best** Adjusted $R^2$. Report the predictors that are used in the resulting model.
+
+**Solution:**
+
+```{r, solution = TRUE}
+lpsa_mod_subs$adjr2
+which.max(lpsa_mod_subs$adjr2)
+lpsa_mod_subs$which[which.max(lpsa_mod_subs$adjr2),]
+```
+
+**(d)** Of the four models you just considered, some of which *may* be the same, which is the best for making predictions? Use leave-one-out-cross-validated MSE or RMSE to decide.
+
+**Solution:**
+
+We first fit the models.
+
+Original:
+
+```{r, solution = TRUE}
+lpsa_mod = lm(lpsa ~ . , data = prostate)
+```
+
+Found using AIC:
+
+```{r, solution = TRUE}
+which(lpsa_mod_subs$which[which.min(lpsa_mod_AIC), ])
+lpsa_mod_aic = lm(lpsa ~ lcavol + lweight + age + lbph + svi, data = prostate)
+```
+
+Found using BIC:
+
+```{r, solution = TRUE}
+which(lpsa_mod_subs$which[which.min(lpsa_mod_subs$bic),])
+lpsa_mod_bic = lm(lpsa ~ lcavol + lweight + svi, data = prostate)
+```
+
+Found using Adjusted $R^2$:
+
+```{r, solution = TRUE}
+which(lpsa_mod_subs$which[which.max(lpsa_mod_subs$adjr2),])
+lpsa_mod_ar2 = lm(lpsa ~ lcavol + lweight + age + lbph + svi + lcp + pgg45, data = prostate)
+```
+
+We then write a function to calcualte the LOOCV RMSE.
+
+```{r, solution = TRUE}
+get_loocv_rmse = function(model) {
+  sqrt(mean((resid(model) / (1 - hatvalues(model))) ^ 2))
+}
+```
+
+Then finally calculated LOOCV RMSE for each.
+
+```{r, solution = TRUE}
+get_loocv_rmse(lpsa_mod)
+get_loocv_rmse(lpsa_mod_aic)
+get_loocv_rmse(lpsa_mod_bic)
+get_loocv_rmse(lpsa_mod_ar2)
+```
+
+We see that the model chosen via AIC is the best, as it obtains the lowest LOOCV RMSE.
+
+## Exercise 5 (Goalies, Redux)
+
+**(a)** Use the data found in [`goalies2015_cleaned.csv`](goalies2015_cleaned.csv) to find a "good" model for wins, `W`. Use any methods seen in class. The model should reach a `Multiple R-squared` above `0.99` using fewer than 37 parameters. Hint: you may want to look into the ability to add many interactions quickly in `R`.
+
+**Solution:**
+
+```{r, solution = TRUE}
+goalies_cleaned = read.csv("goalies2015_cleaned.csv")
+```
+
+As always, we are *lazy*, so we start with a **huge** model, then use backwards AIC to reduce the number of parameters, while still fitting well.
+
+```{r, solution = TRUE}
+biggest_fit = lm(W ~ . ^ 2 + I(GA ^ 2) + I(SA ^ 2) + I(SV ^ 2) + I(SV_PCT ^ 2) + I(GAA ^ 2) + I(SO ^ 2) + I(MIN ^ 2) + I(PIM ^ 2), data = goalies_cleaned)
+fit_aic = step(biggest_fit, direction = "backward", trace = 0)
+```
+
+We see that the model we found meets the stated criteria.
+
+```{r, solution = TRUE}
+length(coef(fit_aic))
+summary(fit_aic)$r.sq
+```
+
+```{r, solution = TRUE}
+coef(fit_aic)
+```
+
+## Exercise 6 (Does It Work?)
+
+In this exercise, we will investigate how well backwards AIC and BIC actually perform. For either to be "working" correctly, when used, they should result in a low number of both **false positives** and **false negatives**. In model selection,
+
+- **False Positive**, FP: Incorrectly including a variable in the model. Including a *non-significant* variable.
+- **False Negative**, FN: Incorrectly excluding a variable in the model. Excluding a *significant* variable.
+
+Consider the **true** model
+
+\[
+Y = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + \beta_3 x_3 + \beta_4 x_4 + \beta_5 x_5 + \beta_6 x_6 + \beta_7 x_7 + \beta_8 x_8 + \beta_9 x_9 + \beta_{10} x_{10} + \epsilon
+\]
+
+where $\epsilon \sim N(0, \sigma^2 = 4)$. The true values of the $\beta$ parameters are given in the `R` code below.
+
+```{r}
+beta_0  = 1
+beta_1  = 1
+beta_2  = 1
+beta_3  = 1
+beta_4  = 1
+beta_5  = 0
+beta_6  = 0
+beta_7  = 0
+beta_8  = 0
+beta_9  = 0
+beta_10 = 0
+sigma = 2
+```
+
+Then, as we have specified them, some variables are significant, and some are not. We store their names in `R` variables for use later.
+
+```{r}
+signif  = c("(Intercept)", "x_1", "x_2", "x_3", "x_4")
+not_sig = c("x_5", "x_6", "x_7", "x_8", "x_9", "x_10")
+```
+
+We now simulate values for these `x` variables which we will use throughout part **(a)**.
+
+```{r}
+set.seed(42)
+n = 100
+x_1  = runif(n, 0, 10)
+x_2  = runif(n, 0, 10)
+x_3  = runif(n, 0, 10)
+x_4  = runif(n, 0, 10)
+x_5  = runif(n, 0, 10)
+x_6  = runif(n, 0, 10)
+x_7  = runif(n, 0, 10)
+x_8  = runif(n, 0, 10)
+x_9  = runif(n, 0, 10)
+x_10 = runif(n, 0, 10)
+```
+
+We then combine these into a data frame, and simulate `y` according to the true model.
+
+```{r}
+sim_data_1 = data.frame(x_1, x_2, x_3, x_4, x_5, x_6, x_7, x_8, x_9, x_10,
+  y = beta_0 + beta_1 * x_1 + beta_2 * x_2 + beta_3 * x_3 + beta_4 * x_4 + rnorm(n, 0 , sigma)
+)
+```
+
+We do a quick check to make sure everything looks correct.
+
+```{r}
+head(sim_data_1)
+```
+
+Now, we fit an incorrect model.
+
+```{r}
+fit = lm(y ~ x_4 + x_5 + x_6, data = sim_data_1)
+coef(fit)
+```
+
+Notice, we have coefficients for `x_4`, `x_5`, and `x_6`. This means that `x_5` and `x_6` are false positives, while `x_1`, `x_2`, and `x_3` are false negatives.
+
+To detect the false negatives, use:
+
+```{r}
+# which are false negatives?
+!(signif %in% names(coef(fit)))
+```
+
+To detect the false positives, use:
+
+```{r}
+# which are false positives?
+names(coef(fit)) %in% not_sig
+```
+
+Note that in both cases, you could `sum()` the result to obtain the number of false negatives or positives.
+
+**(a)** Set a seed equal to your UIN, then, using the given data for each `x` variable above in `sim_data_1`, simulate the response variable `y` 200 times. Each time,
+
+- Fit an additive model using each of the `x` variables.
+- Perform variable selection using backwards AIC.
+- Perform variable selection using backwards BIC.
+- Calculate and store the number of false negatives for the models chosen by AIC and BIC.
+- Calculate and store the number of false positives for the models chosen by AIC and BIC.
+
+Calculate the rate of false positives and negatives for both AIC and BIC. Compare the rates between the two methods.
+
+**Note:** This is a challenging question!
+
+**Solution:**
+
+First some setup.
+
+```{r, solution = TRUE}
+num_sims = 200
+fp_aic = rep(0, num_sims)
+fn_aic = rep(0, num_sims)
+fp_bic = rep(0, num_sims)
+fn_bic = rep(0, num_sims)
+```
+
+Then, running the simulation:
+
+```{r, solution = TRUE}
+set.seed(42)
+for (i in 1:num_sims) {
+
+  sim_data_1$y = beta_0 + beta_1 * x_1 + beta_2 * x_2 + beta_3 * x_3 + beta_4 * x_4 + rnorm(n, 0 , sigma)
+  
+  fit = lm(y ~ ., data = sim_data_1)
+  fit_back_aic = step(fit, direction = "backward", trace = 0)
+  fit_back_bic = step(fit, direction = "backward", trace = 0, k = log(length(resid(fit))))
+  
+  fn_aic[i] = sum(!(signif %in% names(coef(fit_back_aic))))
+  fp_aic[i] = sum(names(coef(fit_back_aic)) %in% not_sig)
+  fn_bic[i] = sum(!(signif %in% names(coef(fit_back_bic))))
+  fp_bic[i] = sum(names(coef(fit_back_bic)) %in% not_sig)
+}
+```
+
+Finally, checking the results:
+
+```{r, solution = TRUE}
+mean(fn_aic)
+mean(fp_aic)
+mean(fn_bic)
+mean(fp_bic)
+```
+
+We see that with both AIC and BIC, no false negatives are produced, only false positives. That means on average, both methods are returning models that are slightly too big. Also, BIC returns less false positives, which matches our intuition, as BIC will always return a smaller model for this sample size.
+
+**(b)** Set a seed equal to your UIN, then, using the given data for each `x` variable below in `sim_data_2`, simulate the response variable `y` 200 times. Each time,
+
+- Fit an additive model using each of the `x` variables.
+- Perform variable selection using backwards AIC.
+- Perform variable selection using backwards BIC.
+- Calculate and store the number of false negatives for the models chosen by AIC and BIC.
+- Calculate and store the number of false positives for the models chosen by AIC and BIC.
+
+Calculate the rate of false positives and negatives for both AIC and BIC. Compare the rates between the two methods. Also compare to your answers in part **(a)** and give a possible reason for any difference.
+
+**Note:** This is a challenging question!
+
+```{r}
+set.seed(42)
+x_1  = runif(n, 0, 10)
+x_2  = runif(n, 0, 10)
+x_3  = runif(n, 0, 10)
+x_4  = runif(n, 0, 10)
+x_5  = runif(n, 0, 10)
+x_6  = runif(n, 0, 10)
+x_7  = runif(n, 0, 10)
+x_8  = x_1 + rnorm(n, 0, 0.1)
+x_9  = x_1 + rnorm(n, 0, 0.1)
+x_10 = x_2 + rnorm(n, 0, 0.1)
+
+sim_data_2 = data.frame(x_1, x_2, x_3, x_4, x_5, x_6, x_7, x_8, x_9, x_10,
+  y = beta_0 + beta_1 * x_1 + beta_2 * x_2 + beta_3 * x_3 + beta_4 * x_4 + rnorm(n, 0 , sigma)
+)
+```
+
+**Solution:**
+
+First some setup.
+
+```{r, solution = TRUE}
+num_sims = 200
+fp_aic = rep(0, num_sims)
+fn_aic = rep(0, num_sims)
+fp_bic = rep(0, num_sims)
+fn_bic = rep(0, num_sims)
+```
+
+Running the simulations on the new `x` data:
+
+```{r, solution = TRUE}
+set.seed(42)
+for (i in 1:num_sims) {
+
+  sim_data_2$y = beta_0 + beta_1 * x_1 + beta_2 * x_2 + beta_3 * x_3 + beta_4 * x_4 + rnorm(n, 0 , sigma)
+  
+  fit = lm(y ~ ., data = sim_data_2)
+  fit_back_aic = step(fit, direction = "backward", trace = 0)
+  fit_back_bic = step(fit, direction = "backward", trace = 0, k = log(length(resid(fit))))
+  
+  fn_aic[i] = sum(!(signif %in% names(coef(fit_back_aic))))
+  fp_aic[i] = sum(names(coef(fit_back_aic)) %in% not_sig)
+  fn_bic[i] = sum(!(signif %in% names(coef(fit_back_bic))))
+  fp_bic[i] = sum(names(coef(fit_back_bic)) %in% not_sig)
+}
+```
+
+Lastly, checking the results:
+
+```{r, solution = TRUE}
+mean(fn_aic)
+mean(fp_aic)
+mean(fn_bic)
+mean(fp_bic)
+```
+
+Again, we see that BIC returns fewer false positives than AIC. However, now both return false negatives! This is a result of the correclation among the predictors.
+
+```{r, solution = TRUE}
+cor(sim_data_2[, c(1, 2, 8, 9, 10)])
+```
