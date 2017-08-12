@@ -305,8 +305,6 @@ Example!!!
 
 os.chdir("C:/Users/whuang67/downloads")
 longley = pd.read_csv("longley.csv")
-response, predictors = dmatrices("GNP_deflator~ GNP + Unemployed + Year",
-                                 longley, return_type = "dataframe")
 
 ## Model Fitting
 model_1 = Linear_Regression("GNP_deflator ~ GNP+Unemployed+Year+Population", longley)
